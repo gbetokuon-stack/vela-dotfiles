@@ -779,6 +779,100 @@ PanelWindow {
                 }
             }
 
+                    // =================================================================
+                    // 3.5. DOCK SUITE QUICK SELECTOR (6 PRESETS + LIVE STUDIO)
+                    // =================================================================
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: dockCardCol.implicitHeight + 24
+                        radius: 18
+                        color: Colors.glassCard
+                        border.width: 1
+                        border.color: Colors.glassBorderSubtle
+
+                        ColumnLayout {
+                            id: dockCardCol
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 10
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                Text {
+                                    text: "󱂬  THANH DOCK ĐA PHONG CÁCH (8 PRESETS)"
+                                    font.family: "JetBrainsMono Nerd Font"
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                    color: Colors.primary
+                                }
+                                Item { Layout.fillWidth: true }
+
+                                // Quick On/Off
+                                Rectangle {
+                                    height: 26; width: dkEnTxt.implicitWidth + 18; radius: 13
+                                    color: Store.dockEnabled ? Colors.primary : Colors.glassHighlight
+                                    Text {
+                                        id: dkEnTxt; anchors.centerIn: parent
+                                        text: Store.dockEnabled ? "Dock: BẬT" : "Dock: TẮT"
+                                        font.family: "Inter"; font.pixelSize: 10; font.bold: true
+                                        color: Store.dockEnabled ? Colors.m3onPrimary : Colors.m3onSurfaceVariant
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                        onClicked: Store.setTuning("dock_enabled", !Store.dockEnabled)
+                                    }
+                                }
+
+                                // Open Live Dock Studio
+                                Rectangle {
+                                    height: 26; width: dkStTxt.implicitWidth + 20; radius: 13
+                                    color: Colors.alpha(Colors.tertiary, 0.24)
+                                    border.width: 1; border.color: Colors.tertiary
+                                    Text {
+                                        id: dkStTxt; anchors.centerIn: parent
+                                        text: "󱂬  Mở Dock Studio"
+                                        font.family: "Inter"; font.pixelSize: 10; font.bold: true
+                                        color: Colors.tertiary
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                        onClicked: Store.toggleDockStudio()
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+                                Repeater {
+                                    model: Store.dockPresets
+                                    delegate: Rectangle {
+                                        required property var modelData
+                                        readonly property bool sel: Store.dockStyle === modelData.id
+                                        Layout.fillWidth: true
+                                        height: 30
+                                        radius: 15
+                                        color: sel ? Colors.primary : Colors.glassHighlight
+                                        border.width: 1
+                                        border.color: sel ? Colors.primary : Colors.glassBorderSubtle
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData.name.split(" ")[0]
+                                            font.family: "Inter"; font.pixelSize: 10
+                                            font.weight: sel ? Font.Bold : Font.Medium
+                                            color: sel ? Colors.m3onPrimary : Colors.m3onSurface
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                            onClicked: Store.applyDockPreset(modelData.id)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
             // =================================================================
             // 4. FROSTED GLASS BLUR, TERMINAL OPACITY & GEOMETRY SLIDERS
             // =================================================================

@@ -100,6 +100,9 @@ SYSTEM_PKGS=(
     git
     power-profiles-daemon
     upower
+    rtkit
+    wireless-regdb
+    usbutils
     lm_sensors
     brightnessctl
     playerctl
@@ -176,12 +179,27 @@ options nvidia_drm modeset=1 fbdev=1
 options nvidia NVreg_PreserveVideoMemoryAllocations=1 NVreg_DynamicPowerManagement=0x02 NVreg_EnableS0ixPowerManagement=1
 EOF
 
+sudo tee /etc/modprobe.d/bt-wifi-lowlatency.conf >/dev/null <<'EOF'
+# Disable USB autosuspend on Bluetooth & PCIe power-save jitter on Realtek RTL8852BE
+options btusb enable_autosuspend=0
+options rtw89_core disable_ps_mode=y
+options rtw89_pci disable_aspm_l1=y disable_aspm_l1ss=y
+EOF
+
 sudo tee /etc/udev/rules.d/80-nvidia-pm.rules >/dev/null <<'EOF'
 # Enable runtime PM (RTD3 D3cold) for NVIDIA RTX 4050 Mobile when idle
-ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
-ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
-ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{power/control}="auto"
+ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add|bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{power/control}="auto"
 EOF
+
+sudo tee /etc/udev/rules.d/81-usb-mouse-bt-pm.rules >/dev/null <<'EOF'
+# Keep Realtek Bluetooth Radio (0bda:b86a) and Compx 8K Wireless Mouse Receiver (373b:11fe) always active
+ACTION=="add|bind", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="b86a", TEST=="power/control", ATTR{power/control}="on"
+ACTION=="add|bind", SUBSYSTEM=="usb", ATTR{idVendor}=="373b", ATTR{idProduct}=="11fe", TEST=="power/control", ATTR{power/control}="on"
+EOF
+
+sudo chmod 755 /etc/bluetooth 2>/dev/null || true
 
 ok "Wrote /etc/modprobe.d/nvidia-victus.conf and /etc/udev/rules.d/80-nvidia-pm.rules."
 

@@ -13,6 +13,8 @@ ShellRoot {
     }
 
     TopBar {}
+    Dock {}
+    DockStudio {}
     CommandDeck {}
     OsdOverlay {}
     WallpaperPicker {}
@@ -89,5 +91,15 @@ ShellRoot {
         function open(): void   { Store.closeAllOverlays(); Store.layoutOpen = true }
         function close(): void  { Store.layoutOpen = false }
         function notify(label: string, pct: int, mode: string): void { Store.showLayoutOsd(label, pct, mode) }
+    }
+
+    IpcHandler {
+        target: "dock"
+        function toggle(): void                { Store.setTuning("dock_enabled", !Store.dockEnabled) }
+        function studio(): void                { Store.toggleDockStudio() }
+        function cycleStyle(): void            { Store.cycleDockStyle() }
+        function setStyle(style: string): void { Store.applyDockPreset(style) }
+        function setPosition(pos: string): void { Store.setTuning("dock_position", pos) }
+        function setVisibility(mode: string): void { Store.setTuning("dock_visibility", mode) }
     }
 }

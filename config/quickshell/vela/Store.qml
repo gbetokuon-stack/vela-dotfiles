@@ -18,6 +18,7 @@ Singleton {
     property bool clipboardOpen: false
     property bool cheatsheetOpen: false
     property bool layoutOpen: false
+    property bool dockStudioOpen: false
     property bool dndEnabled: false
     property int unreadNotifs: 0
     property var notifHistory: []
@@ -98,6 +99,114 @@ Singleton {
     property string animPreset: "spring"
     property bool vrrEnabled: true
     property int slideshowMins: 0
+
+    // Dock Suite Configuration (6 Presets + Live Tuning, persisted via vela-ctl)
+    property bool dockEnabled: true
+    property string dockStyle: "prism"          // "prism" | "macos" | "island" | "cyber" | "taskbar" | "minimal"
+    property string dockPosition: "bottom"      // "bottom" | "left" | "right"
+    property string dockVisibility: "always"    // "always" | "smart" | "autohide"
+    property string dockIndicator: "pill"       // "pill" | "dot" | "bar" | "glow" | "ring"
+    property int dockIconSize: 44
+    property bool dockMagnify: true
+    property int dockMagScale: 135
+    property int dockOpacity: 78
+    property int dockRadius: 22
+    property int dockMargin: 10
+    property bool dockShowLabels: true
+    property bool dockShowRunning: true
+    property bool dockShowUtils: true
+    property var dockPinned: ["kitty", "firefox", "org.kde.dolphin", "btop", "pavucontrol"]
+
+    readonly property var dockPresets: [
+        {
+            id: "prism",
+            name: "Nocturne Prism",
+            badge: "Vela Signature",
+            desc: "Kính obsidian nổi với viền ánh sáng prism & pill động",
+            defaults: {
+                dock_style: "prism", dock_indicator: "pill", dock_icon_size: 44,
+                dock_magnify: true, dock_mag_scale: 132, dock_opacity: 78,
+                dock_radius: 22, dock_margin: 10, dock_show_utils: true
+            }
+        },
+        {
+            id: "macos",
+            name: "macOS Liquid",
+            badge: "Wave Zoom",
+            desc: "Phóng to lượn sóng parabol mượt 144Hz, chấm sáng cổ điển",
+            defaults: {
+                dock_style: "macos", dock_indicator: "dot", dock_icon_size: 46,
+                dock_magnify: true, dock_mag_scale: 152, dock_opacity: 68,
+                dock_radius: 24, dock_margin: 8, dock_show_utils: true
+            }
+        },
+        {
+            id: "island",
+            name: "Dynamic Islands",
+            badge: "3 Pods",
+            desc: "Tách 3 cụm đảo kính nổi: Launcher · Apps · Media/Tools",
+            defaults: {
+                dock_style: "island", dock_indicator: "pill", dock_icon_size: 42,
+                dock_magnify: true, dock_mag_scale: 128, dock_opacity: 80,
+                dock_radius: 24, dock_margin: 12, dock_show_utils: true
+            }
+        },
+        {
+            id: "cyber",
+            name: "Cyber Neon HUD",
+            badge: "Angular",
+            desc: "Viền vát góc sắc cạnh, thanh laser neon & nhãn HUD kỹ thuật",
+            defaults: {
+                dock_style: "cyber", dock_indicator: "bar", dock_icon_size: 42,
+                dock_magnify: true, dock_mag_scale: 124, dock_opacity: 88,
+                dock_radius: 10, dock_margin: 10, dock_show_utils: true
+            }
+        },
+        {
+            id: "taskbar",
+            name: "Glass Taskbar",
+            badge: "Full Width",
+            desc: "Thanh tác vụ tràn cạnh kiểu Win11 hiện đại + Workspace & Clock",
+            defaults: {
+                dock_style: "taskbar", dock_indicator: "bar", dock_icon_size: 38,
+                dock_magnify: false, dock_mag_scale: 118, dock_opacity: 82,
+                dock_radius: 0, dock_margin: 0, dock_show_utils: true
+            }
+        },
+        {
+            id: "minimal",
+            name: "Ultra Minimal",
+            badge: "Feather",
+            desc: "Siêu gọn tinh tế, nhẹ mắt, chấm nhỏ cho không gian code",
+            defaults: {
+                dock_style: "minimal", dock_indicator: "dot", dock_icon_size: 36,
+                dock_magnify: true, dock_mag_scale: 122, dock_opacity: 62,
+                dock_radius: 18, dock_margin: 8, dock_show_utils: false
+            }
+        },
+        {
+            id: "aura",
+            name: "Material Aura",
+            badge: "Glow Pill",
+            desc: "Viên thuốc bo tròn cực đại với hào quang Material You 3 bao icon",
+            defaults: {
+                dock_style: "aura", dock_indicator: "glow", dock_icon_size: 46,
+                dock_magnify: true, dock_mag_scale: 138, dock_opacity: 72,
+                dock_radius: 32, dock_margin: 12, dock_show_utils: true
+            }
+        },
+        {
+            id: "archbar",
+            name: "Arch Tiling Strip",
+            badge: "Power User",
+            desc: "Thanh gọn gàng kèm Workspace & khung viền sáng chuẩn dân Hyprland",
+            defaults: {
+                dock_style: "archbar", dock_indicator: "ring", dock_icon_size: 38,
+                dock_magnify: false, dock_mag_scale: 115, dock_opacity: 84,
+                dock_radius: 12, dock_margin: 8, dock_show_utils: true
+            }
+        }
+    ]
 
     readonly property string homeDir: Quickshell.env("HOME") || "/home/cuongacoustic"
 
@@ -282,6 +391,7 @@ Singleton {
         clipboardOpen = false
         cheatsheetOpen = false
         layoutOpen = false
+        dockStudioOpen = false
     }
 
     function toggleDeck() {
@@ -342,6 +452,101 @@ Singleton {
         const next = !layoutOpen
         closeAllOverlays()
         layoutOpen = next
+    }
+
+    function toggleDockStudio() {
+        const next = !dockStudioOpen
+        closeAllOverlays()
+        dockStudioOpen = next
+        if (next) refreshApps()
+    }
+
+    function applyDockPreset(presetId) {
+        let preset = null
+        for (let i = 0; i < dockPresets.length; i++) {
+            if (dockPresets[i].id === presetId) {
+                preset = dockPresets[i]
+                break
+            }
+        }
+        if (!preset) return
+        const d = preset.defaults
+        dockEnabled = true
+        dockStyle = d.dock_style
+        dockIndicator = d.dock_indicator
+        dockIconSize = d.dock_icon_size
+        dockMagnify = d.dock_magnify
+        dockMagScale = d.dock_mag_scale
+        dockOpacity = d.dock_opacity
+        dockRadius = d.dock_radius
+        dockMargin = d.dock_margin
+        dockShowUtils = d.dock_show_utils
+        const payload = Object.assign({ dock_enabled: true }, d)
+        const jsonArg = JSON.stringify(payload).replace(/'/g, "'\\''")
+        runCmd(`~/.local/bin/vela-ctl set-multi '${jsonArg}'`)
+    }
+
+    function cycleDockStyle() {
+        const order = ["prism", "macos", "island", "cyber", "taskbar", "minimal", "aura", "archbar"]
+        const idx = order.indexOf(dockStyle)
+        const next = order[(idx + 1) % order.length]
+        applyDockPreset(next)
+        for (let i = 0; i < dockPresets.length; i++) {
+            if (dockPresets[i].id === next) {
+                osdKind = "layout"
+                osdText = `Dock · ${dockPresets[i].name}`
+                osdValue = Math.round(((idx + 1) % order.length + 1) / order.length * 100)
+                osdMuted = false
+                osdVisible = true
+                osdHideTimer.restart()
+                break
+            }
+        }
+    }
+
+    function togglePinDockApp(appId) {
+        if (!appId) return
+        const key = String(appId).trim()
+        const cur = Array.isArray(dockPinned) ? dockPinned.slice() : []
+        const lower = key.toLowerCase()
+        const existingIdx = cur.findIndex(x => String(x).toLowerCase() === lower)
+        if (existingIdx >= 0) {
+            cur.splice(existingIdx, 1)
+        } else {
+            cur.push(key)
+        }
+        dockPinned = cur
+        const jsonArg = JSON.stringify({ dock_pinned: cur }).replace(/'/g, "'\\''")
+        runCmd(`~/.local/bin/vela-ctl set-multi '${jsonArg}'`)
+    }
+
+    function isDockAppPinned(appId) {
+        if (!appId || !Array.isArray(dockPinned)) return false
+        const lower = String(appId).toLowerCase()
+        for (let i = 0; i < dockPinned.length; i++) {
+            const p = String(dockPinned[i]).toLowerCase()
+            if (p === lower || p.endsWith("." + lower) || lower.endsWith("." + p)) return true
+        }
+        return false
+    }
+
+    function resetDock() {
+        dockEnabled = true
+        dockStyle = "prism"
+        dockPosition = "bottom"
+        dockVisibility = "always"
+        dockIndicator = "pill"
+        dockIconSize = 44
+        dockMagnify = true
+        dockMagScale = 135
+        dockOpacity = 78
+        dockRadius = 22
+        dockMargin = 10
+        dockShowLabels = true
+        dockShowRunning = true
+        dockShowUtils = true
+        dockPinned = ["kitty", "firefox", "org.kde.dolphin", "btop", "pavucontrol"]
+        runCmd("~/.local/bin/vela-ctl dock-reset")
     }
 
     function showLayoutOsd(label, pct, mode) {
@@ -698,6 +903,20 @@ Singleton {
         else if (key === "anim_preset") animPreset = String(val)
         else if (key === "vrr_enabled") vrrEnabled = Boolean(val)
         else if (key === "slideshow_mins") slideshowMins = Number(val)
+        else if (key === "dock_enabled") dockEnabled = Boolean(val)
+        else if (key === "dock_style") dockStyle = String(val)
+        else if (key === "dock_position") dockPosition = String(val)
+        else if (key === "dock_visibility") dockVisibility = String(val)
+        else if (key === "dock_indicator") dockIndicator = String(val)
+        else if (key === "dock_icon_size") dockIconSize = Number(val)
+        else if (key === "dock_magnify") dockMagnify = Boolean(val)
+        else if (key === "dock_mag_scale") dockMagScale = Number(val)
+        else if (key === "dock_opacity") dockOpacity = Number(val)
+        else if (key === "dock_radius") dockRadius = Number(val)
+        else if (key === "dock_margin") dockMargin = Number(val)
+        else if (key === "dock_show_labels") dockShowLabels = Boolean(val)
+        else if (key === "dock_show_running") dockShowRunning = Boolean(val)
+        else if (key === "dock_show_utils") dockShowUtils = Boolean(val)
         runCmd(`~/.local/bin/vela-ctl set ${key} ${val}`)
     }
 
@@ -795,7 +1014,7 @@ Singleton {
     }
 
     Timer {
-        interval: 2500
+        interval: 3500
         running: true
         repeat: true
         triggeredOnStart: true
@@ -804,7 +1023,7 @@ Singleton {
 
     Process {
         id: telemetryProc
-        command: ["bash", "-lc", "~/.local/bin/vela-telemetry"]
+        command: [root.homeDir + "/.local/bin/vela-telemetry"]
         stdout: SplitParser {
             onRead: data => {
                 try {
@@ -897,6 +1116,21 @@ Singleton {
                     root.vrrEnabled = c.vrr_enabled ?? true
                     root.slideshowMins = c.slideshow_mins ?? 0
                     if (c.layout_mode) root.layoutMode = c.layout_mode
+                    if (c.dock_enabled !== undefined) root.dockEnabled = Boolean(c.dock_enabled)
+                    if (c.dock_style) root.dockStyle = String(c.dock_style)
+                    if (c.dock_position) root.dockPosition = String(c.dock_position)
+                    if (c.dock_visibility) root.dockVisibility = String(c.dock_visibility)
+                    if (c.dock_indicator) root.dockIndicator = String(c.dock_indicator)
+                    if (c.dock_icon_size !== undefined) root.dockIconSize = Number(c.dock_icon_size)
+                    if (c.dock_magnify !== undefined) root.dockMagnify = Boolean(c.dock_magnify)
+                    if (c.dock_mag_scale !== undefined) root.dockMagScale = Number(c.dock_mag_scale)
+                    if (c.dock_opacity !== undefined) root.dockOpacity = Number(c.dock_opacity)
+                    if (c.dock_radius !== undefined) root.dockRadius = Number(c.dock_radius)
+                    if (c.dock_margin !== undefined) root.dockMargin = Number(c.dock_margin)
+                    if (c.dock_show_labels !== undefined) root.dockShowLabels = Boolean(c.dock_show_labels)
+                    if (c.dock_show_running !== undefined) root.dockShowRunning = Boolean(c.dock_show_running)
+                    if (c.dock_show_utils !== undefined) root.dockShowUtils = Boolean(c.dock_show_utils)
+                    if (Array.isArray(c.dock_pinned)) root.dockPinned = c.dock_pinned
                 } catch (e) {}
             }
         }

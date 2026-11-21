@@ -506,6 +506,23 @@ PanelWindow {
                     }
                 }
 
+                // Dock Studio Trigger (Left-click: Studio · Right-click: Cycle 6 Dock Styles)
+                Text {
+                    text: "󱂬"
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 14
+                    color: Store.dockStudioOpen ? Colors.primary : (Store.dockEnabled ? Colors.m3onSurface : Colors.m3onSurfaceVariant)
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: mouse => {
+                            if (mouse.button === Qt.RightButton) Store.cycleDockStyle()
+                            else Store.toggleDockStudio()
+                        }
+                    }
+                }
+
                 // Vela Settings Studio Trigger
                 Text {
                     text: "󰒓"

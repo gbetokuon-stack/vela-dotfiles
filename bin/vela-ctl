@@ -27,7 +27,25 @@ DEFAULTS = {
     "vrr_enabled": True,      # maps to vrr = 2 (fullscreen only -> desktop locked 144Hz)
     "slideshow_mins": 0,      # 0 = Off, else auto-cycle wallpaper every N minutes
     "layout_mode": "dwindle", # "dwindle" | "scrolling" | "master"
+    # Dock Suite Configuration (6 Presets + Live Tuning)
+    "dock_enabled": True,
+    "dock_style": "prism",          # "prism" | "macos" | "island" | "cyber" | "taskbar" | "minimal"
+    "dock_position": "bottom",      # "bottom" | "left" | "right"
+    "dock_visibility": "always",    # "always" | "smart" | "autohide"
+    "dock_indicator": "pill",       # "pill" | "dot" | "bar" | "glow" | "ring"
+    "dock_icon_size": 44,           # 32..60 px
+    "dock_magnify": True,
+    "dock_mag_scale": 135,          # 110..165 %
+    "dock_opacity": 78,             # 30..100 %
+    "dock_radius": 22,              # 0..32 px
+    "dock_margin": 10,              # 0..24 px
+    "dock_show_labels": True,
+    "dock_show_running": True,
+    "dock_show_utils": True,
+    "dock_pinned": ["kitty", "firefox", "org.kde.dolphin", "btop", "pavucontrol"],
 }
+
+DOCK_KEYS = {k for k in DEFAULTS if k.startswith("dock_")}
 
 
 def load_settings():
@@ -69,7 +87,8 @@ def apply_settings(cfg):
         f'general={{gaps_in={gaps_in},gaps_out={gaps_out},border_size={border},layout="{layout_mode}"}},'
         f"decoration={{rounding={rounding},blur={{enabled={blur_en},size={blur_sz},passes={blur_ps}}}}},"
         f"animations={{enabled={anim_en}}},"
-        f"misc={{vrr={vrr}}}"
+        f"misc={{vrr={vrr}}},"
+        f"cursor={{no_hardware_cursors=0}}"
         f"}})"
     ]
 
@@ -152,10 +171,48 @@ def main():
                 cfg[k] = v.lower() in ("1", "true", "yes", "on")
             elif isinstance(DEFAULTS[k], int):
                 cfg[k] = int(float(v))
+            elif isinstance(DEFAULTS[k], list):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        cfg[k] = [str(x) for x in parsed]
+                except Exception:
+                    cfg[k] = [x.strip() for x in v.split(",") if x.strip()]
             else:
                 cfg[k] = v
             save_settings(cfg)
-            apply_settings(cfg)
+            if k not in DOCK_KEYS:
+                apply_settings(cfg)
+        print(json.dumps(cfg))
+    elif cmd == "set-multi" and len(sys.argv) >= 3:
+        try:
+            updates = json.loads(sys.argv[2])
+            if isinstance(updates, dict):
+                needs_hypr = False
+                for k, v in updates.items():
+                    if k not in DEFAULTS:
+                        continue
+                    if isinstance(DEFAULTS[k], bool):
+                        cfg[k] = bool(v) if isinstance(v, bool) else str(v).lower() in ("1", "true", "yes", "on")
+                    elif isinstance(DEFAULTS[k], int):
+                        cfg[k] = int(float(v))
+                    elif isinstance(DEFAULTS[k], list):
+                        if isinstance(v, list):
+                            cfg[k] = [str(x) for x in v]
+                    else:
+                        cfg[k] = str(v)
+                    if k not in DOCK_KEYS:
+                        needs_hypr = True
+                save_settings(cfg)
+                if needs_hypr:
+                    apply_settings(cfg)
+        except Exception:
+            pass
+        print(json.dumps(cfg))
+    elif cmd == "dock-reset":
+        for k in DOCK_KEYS:
+            cfg[k] = list(DEFAULTS[k]) if isinstance(DEFAULTS[k], list) else DEFAULTS[k]
+        save_settings(cfg)
         print(json.dumps(cfg))
 
 

@@ -75,8 +75,8 @@ local function notify_ui(label, pct, mode)
     local safe_pct   = math.max(0, math.min(100, math.floor(tonumber(pct) or 50)))
     local safe_mode  = tostring(mode or M.get_layout()):gsub("[^a-z]", "")
     hl.exec_cmd(string.format(
-        "%s/.local/bin/qs -c vela ipc call layout notify '%s' %d '%s' 2>/dev/null || true",
-        HOME, safe_label, safe_pct, safe_mode
+        "/usr/bin/qs -c vela ipc call layout notify '%s' %d '%s' 2>/dev/null || true",
+        safe_label, safe_pct, safe_mode
     ))
 end
 

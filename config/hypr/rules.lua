@@ -97,6 +97,22 @@ hl.layer_rule({
 })
 
 hl.layer_rule({
+    name         = "vela-dock-blur",
+    match        = { namespace = "^vela-dock$" },
+    blur         = true,
+    ignore_alpha = 0.15,
+    animation    = "fade",
+})
+
+hl.layer_rule({
+    name         = "vela-dock-studio-blur",
+    match        = { namespace = "^vela-dock-studio$" },
+    blur         = true,
+    ignore_alpha = 0.15,
+    animation    = "fade",
+})
+
+hl.layer_rule({
     name         = "rofi-glass-blur",
     match        = { namespace = "^rofi$" },
     blur         = true,

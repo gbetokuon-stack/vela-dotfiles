@@ -7,14 +7,14 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user start hyprpolkitagent 2>/dev/null || /usr/lib/polkit-kde-authentication-agent-1 2>/dev/null || true")
 
     -- 3. Wallpaper daemon + restore last wallpaper, palette & live tuning
-    hl.exec_cmd("__HOME__/.local/bin/awww-daemon")
+    hl.exec_cmd("/usr/bin/awww-daemon")
     hl.exec_cmd("sleep 0.5 && __HOME__/.local/bin/vela-theme --restore")
 
     -- 4. Vela Quickshell Desktop Shell (owns bar, command deck, OSD, notifications, wallpaper picker, app launcher, rice studio, power menu)
-    hl.exec_cmd("pkill -x dunst 2>/dev/null; __HOME__/.local/bin/quickshell -c vela")
+    hl.exec_cmd("pkill -x dunst 2>/dev/null; /usr/bin/quickshell -c vela")
 
     -- 5. Idle manager & Clipboard history
-    hl.exec_cmd("__HOME__/.local/bin/hypridle")
-    hl.exec_cmd("__HOME__/.local/bin/wl-paste --type text --watch __HOME__/.local/bin/cliphist store")
-    hl.exec_cmd("__HOME__/.local/bin/wl-paste --type image --watch __HOME__/.local/bin/cliphist store")
+    hl.exec_cmd("/usr/bin/hypridle")
+    hl.exec_cmd("/usr/bin/wl-paste --type text --watch /usr/bin/cliphist store")
+    hl.exec_cmd("/usr/bin/wl-paste --type image --watch /usr/bin/cliphist store")
 end)

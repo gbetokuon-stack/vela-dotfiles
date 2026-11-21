@@ -24,6 +24,7 @@ CONFIG_DIRS=(
     qt6ct
     yazi
     vela/banner
+    xdg-desktop-portal
 )
 
 for d in "${CONFIG_DIRS[@]}"; do

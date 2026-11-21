@@ -30,18 +30,19 @@ if [[ "$INSTALL_PKGS" -eq 1 ]]; then
         hyprland quickshell matugen awww hyprlock hypridle hyprpicker hyprsunset hyprpolkitagent
         kitty fish starship fastfetch btop cava eza bat yazi fzf rofi
         wl-clipboard cliphist grim slurp satty libnotify brightnessctl playerctl pavucontrol
-        power-profiles-daemon upower lm_sensors jq bc imagemagick
+        power-profiles-daemon upower rtkit wireless-regdb usbutils lm_sensors jq bc imagemagick
         adw-gtk-theme papirus-icon-theme qt6ct kvantum nwg-look xdg-desktop-portal-gtk
         ttf-jetbrains-mono-nerd inter-font noto-fonts noto-fonts-emoji otf-font-awesome
     )
     sudo pacman -Syu --needed --noconfirm "${PKGS[@]}"
+    sudo systemctl enable --now rtkit-daemon.service upower.service 2>/dev/null || true
     ok "Packages installed."
 fi
 
 step "Backing up existing configs to $BACKUP_DIR..."
 mkdir -p "$BACKUP_DIR" "$HOME/.config" "$HOME/.local/bin" "$HOME/Pictures/Wallpapers" "$HOME/.cache/vela"
 
-for item in hypr quickshell/vela matugen kitty fish rofi fastfetch btop cava qt6ct yazi vela/banner starship.toml; do
+for item in hypr quickshell/vela matugen kitty fish rofi fastfetch btop cava qt6ct yazi vela/banner xdg-desktop-portal starship.toml; do
     if [[ -e "$HOME/.config/$item" ]]; then
         mkdir -p "$BACKUP_DIR/$(dirname "$item")"
         cp -a "$HOME/.config/$item" "$BACKUP_DIR/$item"
@@ -83,6 +84,9 @@ if [[ -d "$REPO_DIR/sddm/vela-nocturne" ]]; then
 fi
 
 step "Applying GTK theme defaults & Material You palette..."
+systemctl --user stop dunst.service 2>/dev/null || true
+systemctl --user mask dunst.service 2>/dev/null || true
+systemctl --user reset-failed dunst.service 2>/dev/null || true
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
 gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark' 2>/dev/null || true
 gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark' 2>/dev/null || true

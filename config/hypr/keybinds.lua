@@ -23,8 +23,11 @@ hl.bind(mod .. " + Escape",      hl.dsp.exec_cmd("qs -c vela ipc call power togg
 hl.bind(mod .. " + M",           hl.dsp.exec_cmd("qs -c vela ipc call power toggle"))
 hl.bind(mod .. " + V",           hl.dsp.exec_cmd("qs -c vela ipc call clipboard toggle"))
 hl.bind(mod .. " + slash",       hl.dsp.exec_cmd("qs -c vela ipc call cheatsheet toggle"))
+hl.bind(mod .. " + SHIFT + B",   hl.dsp.exec_cmd("qs -c vela ipc call dock studio"))
+hl.bind(mod .. " + ALT + B",     hl.dsp.exec_cmd("qs -c vela ipc call dock cycleStyle"))
+hl.bind(mod .. " + CTRL + B",    hl.dsp.exec_cmd("qs -c vela ipc call dock toggle"))
 hl.bind(mod .. " + ALT + A",     hl.dsp.exec_cmd("qs -c vela ipc call audio cycle"))
-hl.bind(mod .. " + L",           hl.dsp.exec_cmd("~/.local/bin/hyprlock"))
+hl.bind(mod .. " + L",           hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mod .. " + ALT + L",     hl.dsp.exec_cmd("~/.local/bin/vela-login-preview"))
 hl.bind(mod .. " + G",           hl.dsp.exec_cmd("~/.local/bin/vela-gamemode"))
 

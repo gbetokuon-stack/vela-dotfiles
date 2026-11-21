@@ -93,16 +93,24 @@ hl.config({
         vfr = true,
     },
 
+    cursor = {
+        -- Force hardware DRM cursor plane on AMD Radeon 740M iGPU (eDP-1).
+        -- Default (2 = auto) disables hardware cursors globally when NVIDIA dGPU is present,
+        -- adding 15-25ms compositor frame latency to all mice (USB 8K receiver & Bluetooth).
+        no_hardware_cursors = 0,
+    },
+
     layers = {
         allow_new_top_layers_over_existing_fullscreen = true,
     },
 
     input = {
-        kb_layout    = "us",
-        follow_mouse = 1,
-        sensitivity  = 0,
-        repeat_rate  = 35,
-        repeat_delay = 250,
+        kb_layout     = "us",
+        follow_mouse  = 1,
+        sensitivity   = 0,
+        accel_profile = "flat",
+        repeat_rate   = 35,
+        repeat_delay  = 250,
 
         touchpad = {
             natural_scroll       = true,
