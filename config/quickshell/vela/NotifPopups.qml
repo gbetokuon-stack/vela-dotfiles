@@ -18,6 +18,47 @@ Scope {
         activeNotifs = next
     }
 
+    function resolveThemeIcon(rawIcon, appName) {
+        const candidates = []
+        if (rawIcon && !rawIcon.startsWith("/") && !rawIcon.startsWith("file://") && !rawIcon.startsWith("image://")) {
+            candidates.push(rawIcon)
+        }
+        const lowerApp = String(appName || "").toLowerCase()
+        if (lowerApp.includes("satty") || lowerApp.includes("capture") || lowerApp.includes("screenshot")) {
+            candidates.push("satty", "applets-screenshooter", "camera-photo")
+        } else if (lowerApp) {
+            candidates.push(lowerApp)
+        }
+        for (let i = 0; i < candidates.length; i++) {
+            const name = candidates[i]
+            if (name && Quickshell.hasThemeIcon(name)) {
+                const p = Quickshell.iconPath(name, true)
+                if (p && p.length > 0) return p
+            }
+        }
+        return ""
+    }
+
+    function resolveFileImageUrl(rawImage, rawAppIcon) {
+        const src = rawImage || rawAppIcon || ""
+        if (!src) return ""
+        if (src.startsWith("image://qsimage/")) return src
+        if (src.startsWith("file://")) return src
+        if (src.startsWith("/")) return "file://" + src
+        return ""
+    }
+
+    function fallbackGlyph(appName, summary) {
+        const s = (String(appName || "") + " " + String(summary || "")).toLowerCase()
+        if (s.includes("satty") || s.includes("capture") || s.includes("screenshot") || s.includes("chụp")) return "󰄀"
+        if (s.includes("theme") || s.includes("wallpaper") || s.includes("vela atmosphere")) return "󰸉"
+        if (s.includes("game mode")) return "󰊗"
+        if (s.includes("audio") || s.includes("volume") || s.includes("pipewire")) return "󰕾"
+        if (s.includes("bluetooth")) return "󰂯"
+        if (s.includes("wifi") || s.includes("network")) return "󰤨"
+        return "󰂚"
+    }
+
     NotificationServer {
         id: server
         bodySupported: true
@@ -80,9 +121,11 @@ Scope {
                     id: toast
                     required property var modelData
                     readonly property var nObj: modelData.notifObj
-                    readonly property string iconUrl: modelData.image
-                        ? modelData.image
-                        : (modelData.appIcon ? Quickshell.iconPath(modelData.appIcon, true) : "")
+                    // Never feed raw file paths (/tmp/.tmp...) into IconImage (image://icon/),
+                    // because deleted temp files trigger Quickshell's purple-and-black missing texture!
+                    readonly property string fileImgUrl: notifScope.resolveFileImageUrl(modelData.image, modelData.appIcon)
+                    readonly property string themeIconUrl: notifScope.resolveThemeIcon(modelData.appIcon, modelData.appName)
+                    readonly property string glyphText: notifScope.fallbackGlyph(modelData.appName, modelData.summary)
 
                     Layout.fillWidth: true
                     implicitHeight: toastBody.implicitHeight + 24
@@ -129,9 +172,8 @@ Scope {
                             color: modelData.critical ? Colors.error : Colors.primary
                         }
 
-                        // Optional App Icon / Notification Image
+                        // App Icon / Thumbnail Image / Clean Nerd Font Fallback (Zero Purple-Black Checkerboard)
                         Rectangle {
-                            visible: toast.iconUrl.length > 0
                             width: 38
                             height: 38
                             radius: 11
@@ -139,11 +181,33 @@ Scope {
                             clip: true
                             Layout.alignment: Qt.AlignTop
 
-                            IconImage {
+                            Image {
+                                id: fileImg
                                 anchors.fill: parent
-                                anchors.margins: 4
-                                source: toast.iconUrl
+                                anchors.margins: 2
+                                source: toast.fileImgUrl
+                                fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
+                                cache: false
+                                visible: toast.fileImgUrl.length > 0 && status === Image.Ready
+                            }
+
+                            IconImage {
+                                id: themeIconImg
+                                anchors.fill: parent
+                                anchors.margins: 5
+                                source: (!fileImg.visible && toast.themeIconUrl.length > 0) ? toast.themeIconUrl : ""
+                                visible: !fileImg.visible && toast.themeIconUrl.length > 0
+                                asynchronous: true
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: !fileImg.visible && !themeIconImg.visible
+                                text: toast.glyphText
+                                font.family: "JetBrainsMono Nerd Font"
+                                font.pixelSize: 18
+                                color: modelData.critical ? Colors.error : Colors.primary
                             }
                         }
 
@@ -214,7 +278,7 @@ Scope {
                                             text: modelData.text
                                             font.family: "Inter"
                                             font.pixelSize: 10
-                                            font.weight: Font.SemiBold
+                                            font.weight: Font.DemiBold
                                             color: Colors.primary
                                         }
 

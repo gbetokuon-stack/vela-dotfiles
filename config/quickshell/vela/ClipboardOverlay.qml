@@ -308,7 +308,7 @@ PanelWindow {
                                 text: modelData.isImage ? "Image Snapshot" : modelData.preview
                                 font.family: "Inter"
                                 font.pixelSize: 12
-                                font.weight: isSel ? Font.SemiBold : Font.Normal
+                                font.weight: isSel ? Font.DemiBold : Font.Normal
                                 color: Colors.m3onSurface
                                 elide: Text.ElideRight
                                 maximumLineCount: modelData.isImage ? 1 : 2

@@ -11,7 +11,6 @@ import sys
 DIRS = [
     "/usr/share/applications",
     os.path.expanduser("~/.local/share/applications"),
-    os.path.expanduser("~/.cache/vela-preview/root/usr/share/applications"),
 ]
 
 USAGE_FILE = os.path.expanduser("~/.cache/vela/app-usage.json")

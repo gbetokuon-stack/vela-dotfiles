@@ -2,23 +2,49 @@
 set -euo pipefail
 
 # Vela Screenshot Utility (grim + slurp + satty + wl-copy)
+# Uses --disable-notifications on satty because satty --early-exit deletes its
+# Rust TempDir (/tmp/.tmpXXXX/.tmpYYYY.png) before the notification server can load it,
+# causing a missing-texture icon. Instead, vela-shot saves a persistent preview and notifies cleanly.
 MODE="${1:-region}"
 OUT_DIR="$HOME/Pictures/Screenshots"
 mkdir -p "$OUT_DIR"
 FILE="$OUT_DIR/vela-$(date +%Y%m%d-%H%M%S).png"
+PREVIEW="/tmp/vela-last-screenshot.png"
 
 if [[ "$MODE" == "full" ]]; then
     grim "$FILE"
+    cp -f "$FILE" "$PREVIEW"
     wl-copy < "$FILE"
-    notify-send -a "Vela Capture" "Screenshot Saved" "$FILE (copied to clipboard)"
+    notify-send -a "Vela Capture" -i "$PREVIEW" "Screenshot Saved" "Copied to clipboard · $(basename "$FILE")"
 else
     GEOM=$(slurp -d -b '#0c0f1488' -c '#8ee5ffcc' -s '#8ee5ff18' -w 2 || true)
     [[ -z "$GEOM" ]] && exit 0
+    RAW_TMP="/tmp/vela-region-raw.png"
+    grim -g "$GEOM" "$RAW_TMP"
     if command -v satty >/dev/null 2>&1; then
-        grim -g "$GEOM" - | satty --filename - --output-filename "$FILE" --copy-command wl-copy --early-exit
+        BEFORE_HASH=$(wl-paste --type image/png 2>/dev/null | sha256sum | awk '{print $1}' || echo "none")
+        satty --filename "$RAW_TMP" \
+              --output-filename "$FILE" \
+              --copy-command wl-copy \
+              --early-exit \
+              --save-after-copy \
+              --disable-notifications || true
+        rm -f "$RAW_TMP"
+        if [[ -f "$FILE" ]]; then
+            cp -f "$FILE" "$PREVIEW"
+            notify-send -a "Vela Capture" -i "$PREVIEW" "Screenshot Captured" "Copied to clipboard · $(basename "$FILE")"
+        else
+            AFTER_HASH=$(wl-paste --type image/png 2>/dev/null | sha256sum | awk '{print $1}' || echo "none")
+            if [[ "$AFTER_HASH" != "none" && "$AFTER_HASH" != "$BEFORE_HASH" ]]; then
+                wl-paste --type image/png > "$PREVIEW" 2>/dev/null || true
+                cp -f "$PREVIEW" "$FILE" 2>/dev/null || true
+                notify-send -a "Vela Capture" -i "$PREVIEW" "Screenshot Captured" "Copied to clipboard · $(basename "$FILE")"
+            fi
+        fi
     else
-        grim -g "$GEOM" "$FILE"
+        mv -f "$RAW_TMP" "$FILE"
+        cp -f "$FILE" "$PREVIEW"
         wl-copy < "$FILE"
-        notify-send -a "Vela Capture" "Region Captured" "$FILE"
+        notify-send -a "Vela Capture" -i "$PREVIEW" "Region Captured" "Copied to clipboard · $(basename "$FILE")"
     fi
 fi

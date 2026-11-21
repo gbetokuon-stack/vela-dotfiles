@@ -253,6 +253,7 @@ Scope {
                 if (s.includes("steam")) return "󰓓"
                 if (s.includes("obs")) return "󰑋"
                 if (s.includes("mpv") || s.includes("vlc")) return "󰐊"
+                if (s.includes("satty") || s.includes("shot")) return "󰄀"
                 if (s.includes("nwg") || s.includes("qt6ct") || s.includes("kvantum")) return "󰏘"
                 return "󰣆"
             }
@@ -294,9 +295,14 @@ Scope {
                 if (norm === "btop") tries.push("btop", "utilities-system-monitor")
                 if (norm === "kitty") tries.push("kitty", "utilities-terminal")
                 if (norm === "firefox") tries.push("firefox", "web-browser")
+                if (norm.includes("satty")) tries.push("satty", "applets-screenshooter", "camera-photo")
                 for (let i = 0; i < tries.length; i++) {
-                    const p = Quickshell.iconPath(tries[i], true)
-                    if (p && p.length > 0) return p
+                    const cand = String(tries[i] || "").trim()
+                    if (!cand || cand.startsWith("/") || cand.startsWith("file://")) continue
+                    if (Quickshell.hasThemeIcon(cand)) {
+                        const p = Quickshell.iconPath(cand, true)
+                        if (p && p.length > 0) return p
+                    }
                 }
                 return ""
             }

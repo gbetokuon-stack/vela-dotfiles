@@ -996,7 +996,7 @@ PanelWindow {
                                             text: modelData.summary
                                             font.family: "Inter"
                                             font.pixelSize: 11
-                                            font.weight: Font.SemiBold
+                                            font.weight: Font.DemiBold
                                             color: Colors.m3onSurface
                                             elide: Text.ElideRight
                                             Layout.fillWidth: true

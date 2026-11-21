@@ -378,7 +378,9 @@ PanelWindow {
                     width: appGrid.cellWidth
                     height: appGrid.cellHeight
                     readonly property bool isSel: index === launcher.selectedIndex
-                    readonly property string resolvedIcon: modelData.icon ? Quickshell.iconPath(modelData.icon, true) : ""
+                    readonly property string resolvedIcon: (modelData.icon && !String(modelData.icon).startsWith("/") && Quickshell.hasThemeIcon(modelData.icon))
+                        ? Quickshell.iconPath(modelData.icon, true)
+                        : ""
 
                     Rectangle {
                         anchors.fill: parent
