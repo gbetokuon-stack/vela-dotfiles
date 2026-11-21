@@ -8,6 +8,8 @@
 
 local M = {}
 
+local HOME = os.getenv("HOME") or ""
+
 M.last_ratio = 50
 
 local CYCLE_RATIOS   = { 50, 20, 80, 30, 70 }
@@ -73,8 +75,8 @@ local function notify_ui(label, pct, mode)
     local safe_pct   = math.max(0, math.min(100, math.floor(tonumber(pct) or 50)))
     local safe_mode  = tostring(mode or M.get_layout()):gsub("[^a-z]", "")
     hl.exec_cmd(string.format(
-        "/home/cuongacoustic/.local/bin/qs -c vela ipc call layout notify '%s' %d '%s' 2>/dev/null || true",
-        safe_label, safe_pct, safe_mode
+        "%s/.local/bin/qs -c vela ipc call layout notify '%s' %d '%s' 2>/dev/null || true",
+        HOME, safe_label, safe_pct, safe_mode
     ))
 end
 
@@ -275,8 +277,8 @@ function M.set_layout(mode)
     end
     hl.config({ general = { layout = mode } })
     hl.exec_cmd(string.format(
-        "/home/cuongacoustic/.local/bin/vela-ctl set layout_mode %s >/dev/null 2>&1 || true",
-        mode
+        "%s/.local/bin/vela-ctl set layout_mode %s >/dev/null 2>&1 || true",
+        HOME, mode
     ))
     notify_ui(LAYOUT_LABELS[mode] or mode, M.last_ratio or 50, mode)
 end
