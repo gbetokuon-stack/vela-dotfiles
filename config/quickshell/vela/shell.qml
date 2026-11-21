@@ -20,6 +20,7 @@ ShellRoot {
     VelaSettings {}
     ClipboardOverlay {}
     KeybindCheatsheet {}
+    LayoutOverlay {}
     PowerMenu {}
     NotifPopups {}
 
@@ -80,5 +81,13 @@ ShellRoot {
     IpcHandler {
         target: "audio"
         function cycle(): void { Store.cycleAudioSink() }
+    }
+
+    IpcHandler {
+        target: "layout"
+        function toggle(): void { Store.toggleLayout() }
+        function open(): void   { Store.closeAllOverlays(); Store.layoutOpen = true }
+        function close(): void  { Store.layoutOpen = false }
+        function notify(label: string, pct: int, mode: string): void { Store.showLayoutOsd(label, pct, mode) }
     }
 }

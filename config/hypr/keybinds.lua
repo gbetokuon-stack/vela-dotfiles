@@ -1,5 +1,6 @@
--- Vela Keybindings (Ergonomic end-4 inspired + Windows-style App Search + Rice Studio)
-local mod = "SUPER"
+-- Vela Keybindings (Ergonomic end-4 inspired + Windows-style App Search + Rice Studio + Flexible Splits)
+local mod    = "SUPER"
+local tiling = require("tiling")
 
 -- Core Apps
 hl.bind(mod .. " + Return", hl.dsp.exec_cmd("kitty"))
@@ -40,8 +41,37 @@ hl.bind(mod .. " + F",             hl.dsp.window.fullscreen({ mode = 0 }))
 hl.bind(mod .. " + SHIFT + F",     hl.dsp.window.fullscreen({ mode = 1 }))
 hl.bind(mod .. " + T",             hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mod .. " + P",             hl.dsp.window.pseudo())
-hl.bind(mod .. " + J",             hl.dsp.layout("togglesplit"))
+hl.bind(mod .. " + J",             function() tiling.toggle_orientation() end)
+hl.bind(mod .. " + SHIFT + J",     function() tiling.swap_panes() end)
 hl.bind(mod .. " + SHIFT + Space", hl.dsp.window.center())
+
+-- Flexible Task Splits & Layouts (50/50, 20/80, Side-by-Side, Dwindle / Scrolling / Master)
+hl.bind(mod .. " + U",             hl.dsp.exec_cmd("qs -c vela ipc call layout toggle"))
+hl.bind(mod .. " + Z",             function() tiling.cycle_layout() end)
+hl.bind(mod .. " + ALT + 1",       function() tiling.set_ratio(50) end)
+hl.bind(mod .. " + ALT + 2",       function() tiling.set_ratio(20) end)
+hl.bind(mod .. " + ALT + 3",       function() tiling.set_ratio(30) end)
+hl.bind(mod .. " + ALT + 4",       function() tiling.set_ratio(70) end)
+hl.bind(mod .. " + ALT + 5",       function() tiling.set_ratio(80) end)
+hl.bind(mod .. " + ALT + 0",       function() tiling.cycle_ratio() end)
+hl.bind(mod .. " + ALT + H",       function() tiling.side_by_side(50) end)
+hl.bind(mod .. " + ALT + Return",  function() tiling.promote_pane() end)
+hl.bind(mod .. " + bracketleft",   function() tiling.step_preset(-1) end)
+hl.bind(mod .. " + bracketright",  function() tiling.step_preset(1) end)
+hl.bind(mod .. " + minus",         function() tiling.nudge_ratio(-5) end, { repeating = true })
+hl.bind(mod .. " + equal",         function() tiling.nudge_ratio(5) end,  { repeating = true })
+
+-- Move / Attach Window to Side (Snap 2 Tasks Side-by-Side or Stacked)
+hl.bind(mod .. " + ALT + left",    hl.dsp.window.move({ direction = "left" }))
+hl.bind(mod .. " + ALT + right",   hl.dsp.window.move({ direction = "right" }))
+hl.bind(mod .. " + ALT + up",      hl.dsp.window.move({ direction = "up" }))
+hl.bind(mod .. " + ALT + down",    hl.dsp.window.move({ direction = "down" }))
+
+-- Smooth Keyboard Resize (144Hz Spring-Animated)
+hl.bind(mod .. " + CTRL + left",   hl.dsp.window.resize({ x = -40, y = 0 }), { repeating = true })
+hl.bind(mod .. " + CTRL + right",  hl.dsp.window.resize({ x = 40,  y = 0 }), { repeating = true })
+hl.bind(mod .. " + CTRL + up",     hl.dsp.window.resize({ x = 0, y = -40 }), { repeating = true })
+hl.bind(mod .. " + CTRL + down",   hl.dsp.window.resize({ x = 0, y = 40  }), { repeating = true })
 
 -- Focus (Arrows & Vim keys)
 hl.bind(mod .. " + left",  hl.dsp.focus({ direction = "left" }))

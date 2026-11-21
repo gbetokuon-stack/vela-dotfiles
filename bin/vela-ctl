@@ -26,6 +26,7 @@ DEFAULTS = {
     "anim_preset": "spring",  # "spring" | "snappy" | "smooth" | "off"
     "vrr_enabled": True,      # maps to vrr = 2 (fullscreen only -> desktop locked 144Hz)
     "slideshow_mins": 0,      # 0 = Off, else auto-cycle wallpaper every N minutes
+    "layout_mode": "dwindle", # "dwindle" | "scrolling" | "master"
 }
 
 
@@ -59,10 +60,13 @@ def apply_settings(cfg):
     anim_en = "false" if (not cfg.get("anim_enabled", True) or preset == "off") else "true"
     # VRR = 2 (fullscreen only) keeps desktop animations locked at 144Hz with zero idle-ramp stutter!
     vrr = 2 if cfg.get("vrr_enabled", True) else 0
+    layout_mode = str(cfg.get("layout_mode", "dwindle"))
+    if layout_mode not in ("dwindle", "scrolling", "master"):
+        layout_mode = "dwindle"
 
     lua_parts = [
         f"hl.config({{"
-        f"general={{gaps_in={gaps_in},gaps_out={gaps_out},border_size={border}}},"
+        f'general={{gaps_in={gaps_in},gaps_out={gaps_out},border_size={border},layout="{layout_mode}"}},'
         f"decoration={{rounding={rounding},blur={{enabled={blur_en},size={blur_sz},passes={blur_ps}}}}},"
         f"animations={{enabled={anim_en}}},"
         f"misc={{vrr={vrr}}}"

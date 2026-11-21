@@ -169,6 +169,17 @@ try:
 except Exception:
     im_engine = ""
 
+# 12. Active Hyprland Tiling Layout
+layout_mode = "dwindle"
+try:
+    ws_raw = subprocess.check_output(["hyprctl", "activeworkspace", "-j"], stderr=subprocess.DEVNULL, timeout=0.6).decode()
+    ws_data = json.loads(ws_raw)
+    lm = ws_data.get("tiledLayout") or ""
+    if lm in ("dwindle", "scrolling", "master", "monocle"):
+        layout_mode = lm
+except Exception:
+    pass
+
 print(json.dumps({
     "cpu_pct": cpu_pct,
     "cpu_temp": cpu_temp,
@@ -195,5 +206,6 @@ print(json.dumps({
     "night_light": night_light,
     "game_mode": game_mode,
     "im_engine": im_engine,
+    "layout_mode": layout_mode,
 }))
 PY

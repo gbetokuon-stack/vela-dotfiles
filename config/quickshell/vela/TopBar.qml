@@ -162,6 +162,55 @@ PanelWindow {
                     }
                 }
 
+                // Quick Tiling Layout & Split Ratio Pill
+                // Left-click: Quick Split Popover · Right-click: Cycle 50/50 ↔ 20/80 · Middle-click: Cycle Layout
+                Rectangle {
+                    Layout.preferredHeight: 24
+                    Layout.preferredWidth: layoutPillRow.implicitWidth + 14
+                    height: 24
+                    radius: 12
+                    color: Store.layoutOpen ? Colors.primary : (layoutPillHover.containsMouse ? Colors.glassCard : Colors.glassHighlight)
+                    border.width: 1
+                    border.color: Store.layoutOpen ? Colors.primary : Colors.glassBorderSubtle
+                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                    Row {
+                        id: layoutPillRow
+                        anchors.centerIn: parent
+                        spacing: 5
+                        Text {
+                            text: Store.layoutMode === "scrolling" ? "󰝘" : (Store.layoutMode === "master" ? "󰕰" : "󰕮")
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 11
+                            color: Store.layoutOpen ? Colors.m3onPrimary : Colors.primary
+                        }
+                        Text {
+                            text: Store.layoutMode === "scrolling" ? "Scroll" : (Store.layoutMode === "master" ? "Master" : "Split")
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 10
+                            font.bold: true
+                            color: Store.layoutOpen ? Colors.m3onPrimary : Colors.m3onSurface
+                        }
+                    }
+
+                    MouseArea {
+                        id: layoutPillHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: mouse => {
+                            if (mouse.button === Qt.RightButton) {
+                                Store.cycleSplitRatio()
+                            } else if (mouse.button === Qt.MiddleButton) {
+                                Store.cycleLayoutMode()
+                            } else {
+                                Store.toggleLayout()
+                            }
+                        }
+                    }
+                }
+
                 // Active Window Title Pill
                 Text {
                     readonly property string title: Hyprland.activeToplevel?.title ?? ""

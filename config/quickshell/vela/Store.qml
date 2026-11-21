@@ -17,6 +17,7 @@ Singleton {
     property bool settingsOpen: false
     property bool clipboardOpen: false
     property bool cheatsheetOpen: false
+    property bool layoutOpen: false
     property bool dndEnabled: false
     property int unreadNotifs: 0
     property var notifHistory: []
@@ -42,6 +43,11 @@ Singleton {
     property string osdKind: "volume"
     property int osdValue: 50
     property bool osdMuted: false
+    property string osdText: ""
+
+    // Tiling Layout & Split Ratio state
+    property string layoutMode: "dwindle"
+    property int layoutRatio: 50
 
     // Telemetry state (HP Victus Ryzen 7 7445HS + RTX 4050)
     property int cpuPct: 0
@@ -275,6 +281,7 @@ Singleton {
         settingsOpen = false
         clipboardOpen = false
         cheatsheetOpen = false
+        layoutOpen = false
     }
 
     function toggleDeck() {
@@ -329,6 +336,56 @@ Singleton {
         closeAllOverlays()
         cheatsheetOpen = next
         if (next) refreshKeybinds()
+    }
+
+    function toggleLayout() {
+        const next = !layoutOpen
+        closeAllOverlays()
+        layoutOpen = next
+    }
+
+    function showLayoutOsd(label, pct, mode) {
+        if (mode && (mode === "dwindle" || mode === "scrolling" || mode === "master" || mode === "monocle")) {
+            layoutMode = mode
+        }
+        const p = Math.max(0, Math.min(100, Math.round(pct || 50)))
+        if (p >= 15 && p <= 85) {
+            layoutRatio = p
+        }
+        osdKind = "layout"
+        osdText = label || layoutMode
+        osdValue = p
+        osdMuted = false
+        osdVisible = true
+        osdHideTimer.restart()
+    }
+
+    function setLayoutMode(mode) {
+        layoutMode = mode
+        Quickshell.execDetached(["hyprctl", "eval", `vela_tiling.set_layout('${mode}')`])
+    }
+
+    function cycleLayoutMode() {
+        Quickshell.execDetached(["hyprctl", "eval", "vela_tiling.cycle_layout()"])
+    }
+
+    function setSplitRatio(pct) {
+        layoutRatio = pct
+        Quickshell.execDetached(["hyprctl", "eval", `vela_tiling.set_ratio(${pct})`])
+    }
+
+    function cycleSplitRatio() {
+        Quickshell.execDetached(["hyprctl", "eval", "vela_tiling.cycle_ratio()"])
+    }
+
+    function tilingSideBySide(pct) {
+        const p = pct || 50
+        layoutRatio = p
+        Quickshell.execDetached(["hyprctl", "eval", `vela_tiling.side_by_side(${p})`])
+    }
+
+    function tilingAction(fnName) {
+        Quickshell.execDetached(["hyprctl", "eval", `vela_tiling.${fnName}()`])
     }
 
     function showOsd(kind) {
@@ -779,10 +836,11 @@ Singleton {
                     root.nightLight = d.night_light ?? false
                     root.gameMode = d.game_mode ?? false
                     root.imEngine = d.im_engine ?? ""
+                    if (d.layout_mode) root.layoutMode = d.layout_mode
                     if (root.osdKind === "volume") {
                         root.osdValue = root.volume
                         root.osdMuted = root.muted
-                    } else {
+                    } else if (root.osdKind === "brightness") {
                         root.osdValue = root.brightness
                         root.osdMuted = false
                     }
@@ -838,6 +896,7 @@ Singleton {
                     root.animPreset = c.anim_preset ?? "spring"
                     root.vrrEnabled = c.vrr_enabled ?? true
                     root.slideshowMins = c.slideshow_mins ?? 0
+                    if (c.layout_mode) root.layoutMode = c.layout_mode
                 } catch (e) {}
             }
         }

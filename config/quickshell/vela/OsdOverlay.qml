@@ -44,11 +44,13 @@ PanelWindow {
             spacing: 12
 
             Text {
-                text: Store.osdKind === "brightness"
-                    ? "󰃠"
-                    : (Store.osdMuted || Store.osdValue === 0
-                        ? "󰝟"
-                        : (Store.activeSinkIsHeadset ? "󰋋" : (Store.osdValue > 50 ? "󰕾" : "󰖀")))
+                text: Store.osdKind === "layout"
+                    ? "󰕮"
+                    : (Store.osdKind === "brightness"
+                        ? "󰃠"
+                        : (Store.osdMuted || Store.osdValue === 0
+                            ? "󰝟"
+                            : (Store.activeSinkIsHeadset ? "󰋋" : (Store.osdValue > 50 ? "󰕾" : "󰖀"))))
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 18
                 color: Colors.primary
@@ -59,12 +61,12 @@ PanelWindow {
                 spacing: 5
 
                 Text {
-                    visible: Store.osdKind === "volume"
-                    text: Store.activeSinkName
+                    visible: Store.osdKind === "volume" || Store.osdKind === "layout"
+                    text: Store.osdKind === "layout" ? Store.osdText : Store.activeSinkName
                     font.family: "Inter"
-                    font.pixelSize: 10
-                    font.weight: Font.Medium
-                    color: Colors.m3onSurfaceVariant
+                    font.pixelSize: Store.osdKind === "layout" ? 11 : 10
+                    font.weight: Store.osdKind === "layout" ? Font.DemiBold : Font.Medium
+                    color: Store.osdKind === "layout" ? Colors.m3onSurface : Colors.m3onSurfaceVariant
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
@@ -95,12 +97,14 @@ PanelWindow {
             }
 
             Text {
-                text: Store.osdMuted ? "Muted" : `${Store.osdValue}%`
+                text: Store.osdKind === "layout"
+                    ? `${Store.osdValue}:${100 - Store.osdValue}`
+                    : (Store.osdMuted ? "Muted" : `${Store.osdValue}%`)
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 12
                 font.bold: true
                 color: Colors.m3onSurface
-                Layout.preferredWidth: 42
+                Layout.preferredWidth: 46
                 horizontalAlignment: Text.AlignRight
             }
         }

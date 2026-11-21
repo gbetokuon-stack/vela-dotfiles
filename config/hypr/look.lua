@@ -10,9 +10,11 @@ hl.config({
             active_border   = { colors = { c.primary, c.tertiary }, angle = 35 },
             inactive_border = c.outline_variant,
         },
-        resize_on_border = true,
-        allow_tearing    = false,
-        layout           = "dwindle",
+        resize_on_border        = true,
+        extend_border_grab_area = 16,
+        hover_icon_on_border    = true,
+        allow_tearing           = false,
+        layout                  = "dwindle",
     },
 
     decoration = {
@@ -53,12 +55,27 @@ hl.config({
     },
 
     dwindle = {
-        preserve_split = true,
-        smart_split    = false,
+        preserve_split        = true,
+        smart_split           = false,
+        smart_resizing        = true,
+        default_split_ratio   = 1.0,
+        use_active_for_splits = true,
     },
 
     master = {
-        new_status = "master",
+        new_status     = "slave",
+        mfact          = 0.55,
+        smart_resizing = true,
+        orientation    = "left",
+    },
+
+    scrolling = {
+        fullscreen_on_one_column = true,
+        column_width             = 0.5,
+        explicit_column_widths   = "0.2, 0.3, 0.5, 0.7, 0.8, 1.0",
+        follow_focus             = 1,
+        focus_fit_method         = 1,
+        direction                = "right",
     },
 
     misc = {
