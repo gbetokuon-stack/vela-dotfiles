@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Toggle Vela Game Mode (Hyprland 0.57.2 Lua API)
+FLAG="$HOME/.cache/vela/gamemode"
+mkdir -p "$HOME/.cache/vela"
+
+if [[ -f "$FLAG" ]]; then
+    rm -f "$FLAG"
+    hyprctl eval 'hl.config({ animations = { enabled = true }, decoration = { shadow = { enabled = true } } })' >/dev/null 2>&1 || true
+    [[ -x "$HOME/.local/bin/vela-ctl" ]] && "$HOME/.local/bin/vela-ctl" apply >/dev/null 2>&1 || true
+    powerprofilesctl set balanced 2>/dev/null || true
+    notify-send -a "Vela" "Game Mode Off" "Fluid 144Hz animations restored · Balanced power profile"
+else
+    touch "$FLAG"
+    hyprctl eval 'hl.config({ animations = { enabled = false }, decoration = { shadow = { enabled = false } } })' >/dev/null 2>&1 || true
+    powerprofilesctl set performance 2>/dev/null || true
+    notify-send -a "Vela" "Game Mode On" "Max 144Hz Raw FPS · Performance profile"
+fi

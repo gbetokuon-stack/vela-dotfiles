@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ==============================================================================
+#  Vela Fast NVIDIA RTX 4050 Activator (Arch Linux UKI + systemd-boot / GRUB)
+#  Fixes:
+#    1. Runs depmod so nvidia.ko / nvidia-drm.ko are registered in modules.dep
+#    2. Hard-blacklists nouveau (modprobe + kernel cmdline) & removes xf86-video-nouveau
+#    3. Updates /etc/kernel/cmdline (UKI) AND /etc/default/grub (if present)
+#    4. Rebuilds UKI / initramfs with mkinitcpio -P and verifies zero missing modules
+# ==============================================================================
+
+BOLD="\e[1m"
+CYAN="\e[36m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+RED="\e[31m"
+RESET="\e[0m"
+
+step() { echo -e "\n${BOLD}${CYAN}==>${RESET} ${BOLD}$1${RESET}"; }
+ok()   { echo -e "${GREEN}  ✓${RESET} $1"; }
+warn() { echo -e "${YELLOW}  !${RESET} $1"; }
+
+if [[ $EUID -eq 0 ]]; then
+    echo -e "${RED}Hãy chạy bằng user thường (cuongacoustic), script sẽ tự gọi sudo.${RESET}"
+    exit 1
+fi
+
+KVER="$(uname -r)"
+
+step "Xác thực quyền sudo..."
+sudo -v
+
+step "1/6. Đảm bảo gói nvidia-open & nvidia-utils đã cài đầy đủ..."
+if ! pacman -Q nvidia-open nvidia-utils &>/dev/null; then
+    sudo pacman -Syu --needed --noconfirm nvidia-open nvidia-utils lib32-nvidia-utils nvidia-prime nvidia-settings libva-nvidia-driver egl-wayland egl-gbm
+fi
+if pacman -Q xf86-video-nouveau &>/dev/null; then
+    sudo pacman -Rns --noconfirm xf86-video-nouveau || sudo pacman -R --noconfirm xf86-video-nouveau || true
+    ok "Đã gỡ xf86-video-nouveau."
+fi
+if pacman -Q vulkan-nouveau &>/dev/null; then
+    sudo pacman -R --noconfirm vulkan-nouveau || true
+    ok "Đã gỡ vulkan-nouveau."
+fi
+
+step "2/6. Cập nhật modules.dep (depmod -a $KVER) để kernel nhận nvidia-open..."
+sudo depmod -a "$KVER"
+if modinfo nvidia >/dev/null 2>&1; then
+    NV_PATH="$(modinfo -n nvidia)"
+    ok "Đã nhận module nvidia: $NV_PATH"
+else
+    echo -e "${RED}  ✗ Không tìm thấy module nvidia cho kernel $KVER! Đang cài lại nvidia-open...${RESET}"
+    sudo pacman -S --noconfirm nvidia-open
+    sudo depmod -a "$KVER"
+    modinfo -n nvidia
+fi
+
+step "3/6. Chặn cứng nouveau & bật RTD3 D3cold tiết kiệm pin cho RTX 4050..."
+sudo tee /etc/modprobe.d/nvidia-victus.conf >/dev/null <<'EOF'
+# HP Victus 15-fb3xxx: NVIDIA RTX 4050 Mobile (AD107M) Hybrid Optimus Config
+blacklist nouveau
+install nouveau /bin/false
+options nvidia_drm modeset=1 fbdev=1
+options nvidia NVreg_PreserveVideoMemoryAllocations=1 NVreg_DynamicPowerManagement=0x02 NVreg_EnableS0ixPowerManagement=1
+EOF
+
+sudo tee /etc/udev/rules.d/80-nvidia-pm.rules >/dev/null <<'EOF'
+# Enable runtime PM (RTD3 D3cold) for NVIDIA RTX 4050 Mobile when idle
+ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", TEST=="power/control", ATTR{power/control}="auto"
+ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x040300", ATTR{power/control}="auto"
+EOF
+ok "Đã ghi /etc/modprobe.d/nvidia-victus.conf (blacklist + install /bin/false)."
+
+step "4/6. Cập nhật kernel cmdline cho UKI (/etc/kernel/cmdline) & GRUB (nếu có)..."
+if [[ -f /etc/kernel/cmdline ]]; then
+    sudo cp /etc/kernel/cmdline "/etc/kernel/cmdline.bak.$(date +%Y%m%d%H%M%S)"
+    sudo python3 - <<'PY'
+from pathlib import Path
+p = Path("/etc/kernel/cmdline")
+tokens = p.read_text().strip().split()
+for param in ["nvidia_drm.modeset=1", "nvidia_drm.fbdev=1", "module_blacklist=nouveau"]:
+    if param not in tokens:
+        tokens.append(param)
+p.write_text(" ".join(tokens) + "\n")
+PY
+    ok "Đã cập nhật /etc/kernel/cmdline: $(cat /etc/kernel/cmdline)"
+fi
+
+if [[ -f /etc/default/grub ]]; then
+    sudo python3 - <<'PY'
+from pathlib import Path
+import re
+p = Path("/etc/default/grub")
+text = p.read_text()
+m = re.search(r'^GRUB_CMDLINE_LINUX_DEFAULT="(.*)"$', text, flags=re.M)
+if m:
+    params = m.group(1).split()
+    for needed in ["nvidia_drm.modeset=1", "nvidia_drm.fbdev=1", "module_blacklist=nouveau"]:
+        if needed not in params:
+            params.append(needed)
+    new_line = f'GRUB_CMDLINE_LINUX_DEFAULT="{" ".join(params)}"'
+    p.write_text(text[:m.start()] + new_line + text[m.end():])
+PY
+    [[ -d /boot/grub ]] && sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1 || true
+fi
+
+step "5/6. Cập nhật /etc/mkinitcpio.conf và rebuild UKI (/boot/EFI/Linux/arch-linux.efi)..."
+sudo python3 - <<'PY'
+from pathlib import Path
+import re
+p = Path("/etc/mkinitcpio.conf")
+text = p.read_text()
+desired = "MODULES=(amdgpu nvidia nvidia_modeset nvidia_uvm nvidia_drm)"
+new_text, count = re.subn(r'^MODULES=\([^)]*\)', desired, text, count=1, flags=re.M)
+if count == 0:
+    new_text = desired + "\n" + text
+p.write_text(new_text)
+PY
+sudo mkinitcpio -P
+ok "Đã rebuild UKI với đầy đủ module amdgpu + nvidia-open!"
+
+step "6/6. Bật dịch vụ suspend/resume cho NVIDIA..."
+sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service >/dev/null 2>&1 || true
+ok "Hoàn tất!"
+
+echo -e "\n${BOLD}${GREEN}========================================================================${RESET}"
+echo -e "${BOLD}${GREEN}  XONG! Driver NVIDIA RTX 4050 (nvidia-open) đã được nạp vào UKI!${RESET}"
+echo -e "${BOLD}${YELLOW}  BẮT BUỘC KHỞI ĐỘNG LẠI (reboot) để kernel gỡ nouveau và nạp nvidia.${RESET}"
+echo -e "${BOLD}${CYAN}  Sau khi reboot, kiểm tra bằng lệnh: nvidia-smi${RESET}"
+echo -e "${BOLD}${GREEN}========================================================================${RESET}\n"
+
+read -rp "Bạn có muốn khởi động lại ngay bây giờ không? [y/N]: " ans
+if [[ "${ans,,}" == "y" || "${ans,,}" == "yes" ]]; then
+    systemctl reboot
+fi

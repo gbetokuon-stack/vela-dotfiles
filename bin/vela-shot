@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Vela Screenshot Utility (grim + slurp + satty + wl-copy)
+MODE="${1:-region}"
+OUT_DIR="$HOME/Pictures/Screenshots"
+mkdir -p "$OUT_DIR"
+FILE="$OUT_DIR/vela-$(date +%Y%m%d-%H%M%S).png"
+
+if [[ "$MODE" == "full" ]]; then
+    grim "$FILE"
+    wl-copy < "$FILE"
+    notify-send -a "Vela Capture" "Screenshot Saved" "$FILE (copied to clipboard)"
+else
+    GEOM=$(slurp -d -b '#0c0f1488' -c '#8ee5ffcc' -s '#8ee5ff18' -w 2 || true)
+    [[ -z "$GEOM" ]] && exit 0
+    if command -v satty >/dev/null 2>&1; then
+        grim -g "$GEOM" - | satty --filename - --output-filename "$FILE" --copy-command wl-copy --early-exit
+    else
+        grim -g "$GEOM" "$FILE"
+        wl-copy < "$FILE"
+        notify-send -a "Vela Capture" "Region Captured" "$FILE"
+    fi
+fi

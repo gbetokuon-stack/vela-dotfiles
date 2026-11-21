@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+# =============================================================================
+#  vela-apps — Desktop Application Indexer with Frecency for Vela Spotlight 2.0
+# =============================================================================
+import glob
+import json
+import os
+import re
+import sys
+
+DIRS = [
+    "/usr/share/applications",
+    os.path.expanduser("~/.local/share/applications"),
+    os.path.expanduser("~/.cache/vela-preview/root/usr/share/applications"),
+]
+
+USAGE_FILE = os.path.expanduser("~/.cache/vela/app-usage.json")
+
+ICON_GLYPHS = {
+    "kitty": "󰆍",
+    "firefox": "󰈹",
+    "org.kde.dolphin": "󰉋",
+    "dolphin": "󰉋",
+    "btop": "󰍛",
+    "htop": "󰍛",
+    "pavucontrol": "󰕾",
+    "blueman": "󰂯",
+    "nwg-look": "󰏘",
+    "qt6ct": "󰏘",
+    "kvantum": "󰏘",
+    "steam": "󰓓",
+    "code": "󰨞",
+    "mpv": "󰐊",
+    "vlc": "󰕼",
+    "gimp": "󰏘",
+    "obs": "󰑋",
+    "discord": "󰙯",
+    "spotify": "󰓇",
+}
+
+PINNED_KEYWORDS = ("kitty", "firefox", "dolphin", "btop", "pavucontrol", "blueman", "nwg-look", "qt6ct")
+
+
+def load_usage():
+    try:
+        with open(USAGE_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def record_usage(app_id):
+    os.makedirs(os.path.dirname(USAGE_FILE), exist_ok=True)
+    usage = load_usage()
+    usage[app_id] = int(usage.get(app_id, 0)) + 1
+    with open(USAGE_FILE, "w") as f:
+        json.dump(usage, f, indent=2)
+
+
+def parse_desktop(path, usage):
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return None
+
+    in_entry = False
+    data = {}
+    for line in lines:
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        if s.startswith("[") and s.endswith("]"):
+            in_entry = (s == "[Desktop Entry]")
+            continue
+        if in_entry and "=" in s:
+            k, v = s.split("=", 1)
+            if k not in data:
+                data[k.strip()] = v.strip()
+
+    if data.get("Type") != "Application":
+        return None
+    if data.get("NoDisplay", "").lower() == "true" or data.get("Hidden", "").lower() == "true":
+        return None
+
+    name = data.get("Name", "")
+    exec_cmd = data.get("Exec", "")
+    if not name or not exec_cmd:
+        return None
+
+    exec_clean = re.sub(r"\s+%[fFuUdDnNickvm]", "", exec_cmd).strip()
+    icon_name = data.get("Icon", "")
+    comment = data.get("Comment", "") or data.get("GenericName", "") or "Application"
+    categories = data.get("Categories", "")
+    terminal = data.get("Terminal", "").lower() == "true"
+
+    base_id = os.path.basename(path).replace(".desktop", "").lower()
+    glyph = "󰣆"
+    for k, g in ICON_GLYPHS.items():
+        if k in base_id or k in icon_name.lower() or k in name.lower():
+            glyph = g
+            break
+
+    pinned = any(k in base_id or k in name.lower() for k in PINNED_KEYWORDS)
+
+    return {
+        "id": base_id,
+        "name": name,
+        "desc": comment,
+        "exec": f"kitty -e {exec_clean}" if terminal and "kitty" not in exec_clean else exec_clean,
+        "icon": icon_name,
+        "glyph": glyph,
+        "categories": categories,
+        "pinned": pinned,
+        "uses": int(usage.get(base_id, 0)),
+    }
+
+
+def main():
+    if len(sys.argv) >= 3 and sys.argv[1] == "--record":
+        record_usage(sys.argv[2])
+        return
+
+    usage = load_usage()
+    seen = set()
+    apps = []
+
+    builtins = [
+        {
+            "id": "vela-terminal",
+            "name": "Acoustic Terminal (Kitty)",
+            "desc": "Frosted Blur Terminal with 3D Acoustic Header",
+            "exec": "kitty",
+            "icon": "kitty",
+            "glyph": "󰆍",
+            "categories": "System;Terminal;",
+            "pinned": True,
+            "uses": int(usage.get("vela-terminal", 0)),
+        },
+        {
+            "id": "vela-settings-studio",
+            "name": "Vela System & Rice Studio",
+            "desc": "Tune animations, blur, opacity, slideshow & RTX 4050",
+            "exec": "qs -c vela ipc call settings open",
+            "icon": "preferences-system",
+            "glyph": "󰒓",
+            "categories": "Settings;System;",
+            "pinned": True,
+            "uses": int(usage.get("vela-settings-studio", 0)),
+        },
+        {
+            "id": "vela-wallpaper-studio",
+            "name": "Wallpaper & Matugen Studio",
+            "desc": "Switch wallpapers, random theme, Dark/Light mode",
+            "exec": "qs -c vela ipc call wallpaper open",
+            "icon": "preferences-desktop-wallpaper",
+            "glyph": "󰸉",
+            "categories": "Settings;DesktopSettings;",
+            "pinned": True,
+            "uses": int(usage.get("vela-wallpaper-studio", 0)),
+        },
+        {
+            "id": "vela-clipboard",
+            "name": "Clipboard History Manager",
+            "desc": "Browse, pin & preview copied text and images (Super + V)",
+            "exec": "qs -c vela ipc call clipboard open",
+            "icon": "klipper",
+            "glyph": "󰅌",
+            "categories": "System;Utility;",
+            "pinned": True,
+            "uses": int(usage.get("vela-clipboard", 0)),
+        },
+        {
+            "id": "vela-cheatsheet",
+            "name": "Keybind Cheatsheet",
+            "desc": "Searchable Hyprland shortcuts reference (Super + /)",
+            "exec": "qs -c vela ipc call cheatsheet open",
+            "icon": "preferences-desktop-keyboard",
+            "glyph": "󰌌",
+            "categories": "System;Settings;",
+            "pinned": True,
+            "uses": int(usage.get("vela-cheatsheet", 0)),
+        },
+        {
+            "id": "vela-random-theme",
+            "name": "Random Wallpaper & Palette",
+            "desc": "Pick random wallpaper and regenerate Material You theme",
+            "exec": "~/.local/bin/vela-theme --random",
+            "icon": "preferences-color",
+            "glyph": "󰒝",
+            "categories": "Settings;",
+            "pinned": True,
+            "uses": int(usage.get("vela-random-theme", 0)),
+        },
+        {
+            "id": "vela-lockscreen",
+            "name": "Cyber-Glass Lockscreen",
+            "desc": "Lock session with Vela multi-widget HUD lockscreen",
+            "exec": "hyprlock",
+            "icon": "system-lock-screen",
+            "glyph": "󰌾",
+            "categories": "System;",
+            "pinned": True,
+            "uses": int(usage.get("vela-lockscreen", 0)),
+        },
+    ]
+
+    for b in builtins:
+        apps.append(b)
+        seen.add(b["name"].lower())
+
+    desktop_apps = []
+    for d in DIRS:
+        if not os.path.isdir(d):
+            continue
+        for p in sorted(glob.glob(os.path.join(d, "*.desktop"))):
+            item = parse_desktop(p, usage)
+            if item and item["name"].lower() not in seen:
+                seen.add(item["name"].lower())
+                desktop_apps.append(item)
+
+    desktop_apps.sort(key=lambda a: (-a["uses"], 0 if a["pinned"] else 1, a["name"].lower()))
+    apps.extend(desktop_apps)
+    print(json.dumps(apps))
+
+
+if __name__ == "__main__":
+    main()

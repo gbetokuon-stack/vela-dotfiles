@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =============================================================================
+#  Vela Dynamic Material You Theme Engine (awww + Matugen v4 + Dark/Light/Random)
+# =============================================================================
+export PATH="$HOME/.local/bin:$PATH"
+CACHE_DIR="$HOME/.cache/vela"
+WALL_FILE="$CACHE_DIR/current_wallpaper"
+SCHEME_FILE="$CACHE_DIR/current_scheme"
+MODE_FILE="$CACHE_DIR/current_mode"
+WALL_LINK="$CACHE_DIR/current_wallpaper.img"
+mkdir -p "$CACHE_DIR"
+
+SCHEMES=(
+    "scheme-tonal-spot"
+    "scheme-expressive"
+    "scheme-fidelity"
+    "scheme-vibrant"
+    "scheme-fruit-salad"
+    "scheme-rainbow"
+    "scheme-monochrome"
+)
+
+NO_RELOAD=0
+DO_RANDOM_WALL=0
+DO_RANDOM_ALL=0
+SCHEME=""
+MODE=""
+WALL=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --restore)
+            [[ -f "$WALL_FILE" ]] && WALL="$(cat "$WALL_FILE")"
+            [[ -f "$SCHEME_FILE" ]] && SCHEME="$(cat "$SCHEME_FILE")"
+            [[ -f "$MODE_FILE" ]] && MODE="$(cat "$MODE_FILE")"
+            shift
+            ;;
+        --random)
+            DO_RANDOM_WALL=1
+            shift
+            ;;
+        --random-all)
+            DO_RANDOM_WALL=1
+            DO_RANDOM_ALL=1
+            shift
+            ;;
+        --scheme)
+            SCHEME="$2"
+            shift 2
+            ;;
+        --mode)
+            MODE="$2"
+            shift 2
+            ;;
+        --no-reload)
+            NO_RELOAD=1
+            shift
+            ;;
+        *)
+            WALL="$1"
+            shift
+            ;;
+    esac
+done
+
+CUR_WALL=""
+[[ -f "$WALL_FILE" ]] && CUR_WALL="$(cat "$WALL_FILE")"
+CUR_MODE="dark"
+[[ -f "$MODE_FILE" ]] && CUR_MODE="$(cat "$MODE_FILE")"
+
+if [[ "$MODE" == "toggle" ]]; then
+    if [[ "$CUR_MODE" == "dark" ]]; then
+        MODE="light"
+    else
+        MODE="dark"
+    fi
+elif [[ -z "$MODE" ]]; then
+    MODE="$CUR_MODE"
+fi
+
+# Collect all wallpapers
+mapfile -t ALL_WALLS < <(find "$HOME/Pictures/Wallpapers" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | sort)
+
+if [[ "$DO_RANDOM_WALL" -eq 1 && "${#ALL_WALLS[@]}" -gt 0 ]]; then
+    # Pick a random wallpaper different from current if possible
+    for _ in {1..10}; do
+        CAND="${ALL_WALLS[$((RANDOM % ${#ALL_WALLS[@]}))]}"
+        if [[ "$CAND" != "$CUR_WALL" || "${#ALL_WALLS[@]}" -eq 1 ]]; then
+            WALL="$CAND"
+            break
+        fi
+    done
+fi
+
+if [[ "$DO_RANDOM_ALL" -eq 1 ]]; then
+    SCHEME="${SCHEMES[$((RANDOM % ${#SCHEMES[@]}))]}"
+fi
+
+if [[ -z "$WALL" || ! -f "$WALL" ]]; then
+    if [[ -n "$CUR_WALL" && -f "$CUR_WALL" ]]; then
+        WALL="$CUR_WALL"
+    elif [[ "${#ALL_WALLS[@]}" -gt 0 ]]; then
+        WALL="${ALL_WALLS[0]}"
+    else
+        echo "No wallpaper found in $HOME/Pictures/Wallpapers" >&2
+        exit 1
+    fi
+fi
+
+if [[ -z "$SCHEME" ]]; then
+    if [[ -f "$SCHEME_FILE" ]]; then
+        SCHEME="$(cat "$SCHEME_FILE")"
+    else
+        SCHEME="scheme-tonal-spot"
+    fi
+fi
+
+echo "$WALL" > "$WALL_FILE"
+echo "$SCHEME" > "$SCHEME_FILE"
+echo "$MODE" > "$MODE_FILE"
+ln -sf "$WALL" "$WALL_LINK"
+
+# Sync wallpaper to Vela SDDM Login Theme (local & system if writable)
+if [[ -d "$HOME/.local/share/sddm/themes/vela-nocturne" ]]; then
+    cp -fL "$WALL" "$HOME/.local/share/sddm/themes/vela-nocturne/background.jpg" 2>/dev/null || true
+fi
+if [[ -w "/usr/share/sddm/themes/vela-nocturne/background.jpg" ]]; then
+    cp -fL "$WALL" "/usr/share/sddm/themes/vela-nocturne/background.jpg" 2>/dev/null || true
+fi
+
+# 1. Smooth radial wipe wallpaper transition via awww
+if command -v awww >/dev/null 2>&1; then
+    pgrep -x awww-daemon >/dev/null 2>&1 || (setsid nohup awww-daemon >/dev/null 2>&1 </dev/null & sleep 0.4)
+    # Randomize transition position slightly for expressive feel
+    POS_X=$(awk -v r="$RANDOM" 'BEGIN { printf "%.2f", 0.2 + (r % 60) / 100.0 }')
+    POS_Y=$(awk -v r="$RANDOM" 'BEGIN { printf "%.2f", 0.2 + ((r / 7) % 60) / 100.0 }')
+    awww img "$WALL" \
+        --transition-type grow \
+        --transition-pos "${POS_X},${POS_Y}" \
+        --transition-fps 144 \
+        --transition-duration 0.85 \
+        --transition-bezier 0.16,1.0,0.30,1.0 >/dev/null 2>&1 || true
+fi
+
+# 2. Generate Material You palette with Matugen v4
+if command -v matugen >/dev/null 2>&1; then
+    matugen image "$WALL" -t "$SCHEME" -m "$MODE" --source-color-index 0 >/dev/null 2>&1 || \
+    matugen image "$WALL" -m "$MODE" --source-color-index 0 >/dev/null 2>&1 || true
+fi
+
+# 3. Sync GTK dark/light mode preference
+if [[ "$MODE" == "light" ]]; then
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-light' 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3' 2>/dev/null || true
+else
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark' 2>/dev/null || true
+fi
+
+# 4. Live reload Hyprland, Kitty, Cava
+if [[ "$NO_RELOAD" -eq 0 ]]; then
+    command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
+    # Re-apply custom user tuning (blur, gaps, rounding, animations) on top of reload
+    [[ -x "$HOME/.local/bin/vela-ctl" ]] && "$HOME/.local/bin/vela-ctl" apply >/dev/null 2>&1 || true
+    pkill -SIGUSR1 kitty 2>/dev/null || true
+    pkill -SIGUSR2 cava 2>/dev/null || true
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send -a "Vela Atmosphere" -u low "Theme Synced ($MODE)" "$(basename "$WALL")  ·  ${SCHEME#scheme-}" 2>/dev/null || true
+    fi
+fi

@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =============================================================================
+#  vela-login-install — Install Vela "Nocturne Prism" 144Hz SDDM Login Screen
+# =============================================================================
+SRC_DIR="/home/cuongacoustic/.local/share/sddm/themes/vela-nocturne"
+DST_DIR="/usr/share/sddm/themes/vela-nocturne"
+WALL_CACHE="/home/cuongacoustic/.cache/vela/current_wallpaper.img"
+DEFAULT_WALL="/home/cuongacoustic/Pictures/Wallpapers/01-nocturne-prism.jpg"
+
+if [[ $EUID -ne 0 ]]; then
+    echo "◆ Elevating privileges with sudo to install Vela SDDM Login Theme..."
+    exec sudo "$0" "$@"
+fi
+
+mkdir -p "$DST_DIR" /etc/sddm.conf.d /var/lib/sddm
+
+cp -rf "$SRC_DIR/"* "$DST_DIR/"
+if [[ -f "$WALL_CACHE" ]]; then
+    cp -fL "$WALL_CACHE" "$DST_DIR/background.jpg"
+elif [[ -f "$DEFAULT_WALL" ]]; then
+    cp -f "$DEFAULT_WALL" "$DST_DIR/background.jpg"
+fi
+
+chmod -R a+rX "$DST_DIR"
+# Allow user cuongacoustic to update background.jpg when switching wallpapers with vela-theme
+chown cuongacoustic:cuongacoustic "$DST_DIR/background.jpg" 2>/dev/null || true
+
+cat > /etc/sddm.conf.d/10-vela-nocturne.conf << 'EOF'
+[Theme]
+Current=vela-nocturne
+ThemeDir=/usr/share/sddm/themes
+CursorTheme=Adwaita
+CursorSize=24
+
+[Users]
+RememberLastUser=true
+RememberLastSession=true
+
+[General]
+Numlock=on
+EOF
+
+cat > /var/lib/sddm/state.conf << 'EOF'
+[Last]
+User=cuongacoustic
+Session=/usr/share/wayland-sessions/hyprland.desktop
+EOF
+chown sddm:sddm /var/lib/sddm/state.conf 2>/dev/null || true
+
+echo "✔ Vela 'Nocturne Prism' 144Hz SDDM Login Theme installed to $DST_DIR"
+echo "✔ Default SDDM session set to Hyprland (/usr/share/wayland-sessions/hyprland.desktop)"

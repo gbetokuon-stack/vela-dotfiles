@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+# =============================================================================
+#  vela-clipboard — Backend for Vela Native Quickshell Clipboard Manager
+#  Supports: list (with image thumbnails & pins), copy, delete, pin, clear
+# =============================================================================
+import json
+import os
+import subprocess
+import sys
+
+CACHE_DIR = os.path.expanduser("~/.cache/vela")
+PIN_FILE = os.path.join(CACHE_DIR, "clip-pins.json")
+THUMB_DIR = "/tmp/vela-clip-thumbs"
+
+
+def load_pins():
+    try:
+        with open(PIN_FILE) as f:
+            return set(json.load(f))
+    except Exception:
+        return set()
+
+
+def save_pins(pins):
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    with open(PIN_FILE, "w") as f:
+        json.dump(sorted(pins), f)
+
+
+def list_items():
+    os.makedirs(THUMB_DIR, exist_ok=True)
+    pins = load_pins()
+    try:
+        out = subprocess.check_output(["cliphist", "list"], stderr=subprocess.DEVNULL).decode("utf-8", errors="replace")
+    except Exception:
+        print("[]")
+        return
+
+    items = []
+    for line in out.splitlines()[:80]:
+        if "\t" not in line:
+            continue
+        cid, preview = line.split("\t", 1)
+        cid = cid.strip()
+        is_image = preview.startswith("[[ binary data") and any(
+            ext in preview.lower() for ext in ("png", "jpg", "jpeg", "webp", "bmp", "gif")
+        )
+        thumb = ""
+        if is_image:
+            thumb_path = os.path.join(THUMB_DIR, f"{cid}.png")
+            if not os.path.exists(thumb_path):
+                try:
+                    raw = subprocess.check_output(["cliphist", "decode", cid], stderr=subprocess.DEVNULL, timeout=1.5)
+                    with open(thumb_path, "wb") as f:
+                        f.write(raw)
+                except Exception:
+                    thumb_path = ""
+            thumb = thumb_path
+
+        items.append({
+            "id": cid,
+            "preview": preview.strip(),
+            "isImage": is_image,
+            "thumb": thumb,
+            "pinned": cid in pins,
+        })
+
+    # Pinned entries first, preserve recency order within each group
+    items.sort(key=lambda x: (0 if x["pinned"] else 1))
+    print(json.dumps(items))
+
+
+def copy_item(cid):
+    p1 = subprocess.Popen(["cliphist", "decode", cid], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    p2 = subprocess.Popen(["wl-copy"], stdin=p1.stdout, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    p1.stdout.close()
+    p2.communicate(timeout=2)
+
+
+def delete_item(cid):
+    pins = load_pins()
+    if cid in pins:
+        pins.discard(cid)
+        save_pins(pins)
+    try:
+        out = subprocess.check_output(["cliphist", "list"], stderr=subprocess.DEVNULL).decode("utf-8", errors="replace")
+        for line in out.splitlines():
+            if line.split("\t", 1)[0].strip() == cid:
+                subprocess.run(["cliphist", "delete"], input=(line + "\n").encode(), stderr=subprocess.DEVNULL)
+                break
+    except Exception:
+        pass
+    thumb = os.path.join(THUMB_DIR, f"{cid}.png")
+    if os.path.exists(thumb):
+        try:
+            os.remove(thumb)
+        except OSError:
+            pass
+
+
+def toggle_pin(cid):
+    pins = load_pins()
+    if cid in pins:
+        pins.discard(cid)
+    else:
+        pins.add(cid)
+    save_pins(pins)
+
+
+def clear_all():
+    subprocess.run(["cliphist", "wipe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    save_pins(set())
+    if os.path.isdir(THUMB_DIR):
+        for fn in os.listdir(THUMB_DIR):
+            try:
+                os.remove(os.path.join(THUMB_DIR, fn))
+            except OSError:
+                pass
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "list"
+    if cmd == "list":
+        list_items()
+    elif cmd == "copy" and len(sys.argv) >= 3:
+        copy_item(sys.argv[2])
+    elif cmd == "delete" and len(sys.argv) >= 3:
+        delete_item(sys.argv[2])
+    elif cmd == "pin" and len(sys.argv) >= 3:
+        toggle_pin(sys.argv[2])
+    elif cmd == "clear":
+        clear_all()
+
+
+if __name__ == "__main__":
+    main()

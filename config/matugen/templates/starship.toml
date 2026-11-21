@@ -1,0 +1,39 @@
+# Vela Minimalist Starship Prompt (Matugen v4 Dynamic)
+add_newline = false
+format = """
+[◆](bold {{colors.primary.default.hex}}) $directory$git_branch$git_status$python$nodejs$rust$cmd_duration
+[❯](bold {{colors.tertiary.default.hex}}) """
+
+[directory]
+style = "bold {{colors.primary.default.hex}}"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = "󰘬 "
+style = "bold {{colors.tertiary.default.hex}}"
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "bold {{colors.secondary.default.hex}}"
+format = "([$all_status$ahead_behind]($style) )"
+
+[cmd_duration]
+min_time = 1500
+style = "{{colors.on_surface_variant.default.hex}}"
+format = "[󰔟 $duration]($style)"
+
+[python]
+symbol = " "
+format = "[$symbol$version]($style) "
+style = "{{colors.secondary.default.hex}}"
+
+[nodejs]
+symbol = " "
+format = "[$symbol$version]($style) "
+style = "{{colors.tertiary.default.hex}}"
+
+[rust]
+symbol = " "
+format = "[$symbol$version]($style) "
+style = "{{colors.error.default.hex}}"

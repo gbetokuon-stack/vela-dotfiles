@@ -1,0 +1,14 @@
+[SddmGreeterTheme]
+Name=Vela Nocturne Prism
+Description=144Hz Cyber-Glass Obsidian Login Screen for Hyprland 0.57
+Author=Vela Acoustic Studio
+Copyright=(c) 2026 Vela Acoustic Studio
+License=MIT
+Type=sddm-theme
+Version=2.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+TranslationsDirectory=translations
+Theme-Id=vela-nocturne
+Theme-API=2.0
+QtVersion=6

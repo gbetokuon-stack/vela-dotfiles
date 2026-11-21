@@ -1,0 +1,13 @@
+# Runtime caches & temporary files
+*.log
+*.bak
+*.orig
+__pycache__/
+.DS_Store
+Thumbs.db
+
+# Private / machine-local state
+config/fish/fish_variables
+config/hypr/dri/
+config/hypr/hyprland.lua.orig
+sddm/vela-nocturne/background.jpg

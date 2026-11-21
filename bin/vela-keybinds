@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+# =============================================================================
+#  vela-keybinds — Live Parser for ~/.config/hypr/keybinds.lua -> JSON
+# =============================================================================
+import json
+import os
+import re
+
+KB_FILE = os.path.expanduser("~/.config/hypr/keybinds.lua")
+
+ACTION_LABELS = [
+    ("launcher toggle", "Toggle App Launcher / Spotlight"),
+    ("settings toggle", "Toggle Vela Rice Studio"),
+    ("deck toggle", "Toggle Vela Command Deck"),
+    ("wallpaper toggle", "Toggle Wallpaper & Matugen Studio"),
+    ("clipboard toggle", "Toggle Native Clipboard Manager"),
+    ("cheatsheet toggle", "Toggle Keybind Cheatsheet"),
+    ("power toggle", "Toggle Power Menu"),
+    ("vela-theme --random-all", "Random Wallpaper + Matugen Scheme"),
+    ("vela-theme --random", "Random Wallpaper + Palette"),
+    ("vela-theme --mode toggle", "Toggle Dark / Light Mode"),
+    ("vela-clip", "Open Clipboard Manager"),
+    ("vela-gamemode", "Toggle 144Hz Game Mode"),
+    ("vela-login-preview", "Preview SDDM Login Theme"),
+    ("vela-shot region", "Screenshot Region (Satty)"),
+    ("vela-shot full", "Screenshot Fullscreen"),
+    ("hyprpicker", "Color Picker (Copy Hex)"),
+    ("hyprlock", "Lock Session (Cyber-Glass HUD)"),
+    ("rofi", "Open Fallback Rofi Launcher"),
+    ("kitty", "Launch Acoustic Terminal (Kitty)"),
+    ("dolphin", "Launch File Manager (Dolphin)"),
+    ("firefox", "Launch Web Browser (Firefox)"),
+    ("window.close", "Close Active Window"),
+    ("window.kill", "Force Kill Active Window"),
+    ("fullscreen({ mode = 0", "Toggle True Fullscreen"),
+    ("fullscreen({ mode = 1", "Toggle Maximized Window"),
+    ("window.float", "Toggle Floating Mode"),
+    ("window.pseudo", "Toggle Pseudotile"),
+    ("togglesplit", "Toggle Dwindle Split Direction"),
+    ("window.center", "Center Floating Window"),
+    ("window.swap", "Swap Window Direction"),
+    ("window.drag", "Drag Window (Mouse)"),
+    ("window.resize", "Resize Window (Mouse)"),
+    ("toggle_special", "Toggle Prism Scratchpad"),
+    ("special:prism", "Move Window to Prism Scratchpad"),
+    ('workspace = "e+1"', "Next Occupied Workspace"),
+    ('workspace = "e-1"', "Previous Occupied Workspace"),
+    ("direction = \"left\"", "Focus Window Left"),
+    ("direction = \"right\"", "Focus Window Right"),
+    ("direction = \"up\"", "Focus Window Up"),
+    ("direction = \"down\"", "Focus Window Down"),
+    ("wpctl set-volume", "Adjust Audio Volume"),
+    ("wpctl set-mute @DEFAULT_AUDIO_SINK@", "Toggle Audio Mute"),
+    ("wpctl set-mute @DEFAULT_AUDIO_SOURCE@", "Toggle Microphone Mute"),
+    ("brightnessctl", "Adjust Display Brightness"),
+    ("playerctl next", "Next Media Track"),
+    ("playerctl prev", "Previous Media Track"),
+    ("playerctl play-pause", "Play / Pause Media"),
+]
+
+
+def describe(rhs):
+    for pat, label in ACTION_LABELS:
+        if pat in rhs:
+            return label
+    m = re.search(r'exec_cmd\("([^"]+)"\)', rhs)
+    if m:
+        return m.group(1)
+    return rhs.strip()
+
+
+def format_keys(expr):
+    k = expr.replace('mod .. "', "SUPER").replace('"', "").strip()
+    k = re.sub(r"\s*\+\s*", " + ", k)
+    return k
+
+
+def main():
+    entries = []
+    category = "General"
+    if not os.path.exists(KB_FILE):
+        print("[]")
+        return
+
+    with open(KB_FILE, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+
+    for line in lines:
+        s = line.strip()
+        if s.startswith("-- ") and not s.startswith("-- Vela Keybindings"):
+            title = s[3:].split("(")[0].strip()
+            if "Start / App Search" in title or "Rice Settings" in title:
+                title = "Vela Shell & Overlays"
+            elif "Volume & Brightness" in title:
+                title = "Audio & Brightness"
+            elif "Workspaces" in title:
+                title = "Workspaces"
+            if title:
+                category = title
+            continue
+
+        if "for i = 1, 10 do" in s:
+            entries.append({"category": "Workspaces", "keys": "SUPER + 1..0", "desc": "Switch to Workspace 1–10"})
+            entries.append({"category": "Workspaces", "keys": "SUPER + SHIFT + 1..0", "desc": "Move Active Window to Workspace 1–10"})
+            continue
+
+        m = re.match(r'^hl\.bind\(([^,]+),\s*(.+)\)$', s)
+        if m:
+            raw_key = m.group(1).strip()
+            if "key" in raw_key:
+                continue
+            rhs = m.group(2).strip()
+            entries.append({
+                "category": category,
+                "keys": format_keys(raw_key),
+                "desc": describe(rhs),
+            })
+
+    print(json.dumps(entries))
+
+
+if __name__ == "__main__":
+    main()

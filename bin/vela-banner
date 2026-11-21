@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+# =============================================================================
+#  vela-banner — Pure 3D Slanted Character-Art "Acoustic" with Character Blur
+#  - 100% Unicode/ASCII character art (NO PNG image!)
+#  - Slanted italic 3D letters + 3D depth extrusion (▓/▒) + soft blur halo (░/·)
+#  - Dynamically colored by Matugen palette (~/.config/kitty/colors.conf)
+# =============================================================================
+import os
+import sys
+
+# Crisp 8-row tall glyphs designed for diagonal italic slant & 3D extrusion
+GLYPHS = {
+    "A": [
+        "   █████  ",
+        "  ███████ ",
+        " ███   ███",
+        " ███   ███",
+        "██████████",
+        "██████████",
+        "███    ███",
+        "███    ███",
+    ],
+    "c": [
+        "          ",
+        "          ",
+        "  ███████ ",
+        " █████████",
+        "███       ",
+        "███       ",
+        " █████████",
+        "  ███████ ",
+    ],
+    "o": [
+        "          ",
+        "          ",
+        "  ███████ ",
+        " ███   ███",
+        "███    ███",
+        "███    ███",
+        " ███   ███",
+        "  ███████ ",
+    ],
+    "u": [
+        "          ",
+        "          ",
+        "███    ███",
+        "███    ███",
+        "███    ███",
+        "███    ███",
+        " █████████",
+        "  ████ ███",
+    ],
+    "s": [
+        "          ",
+        "          ",
+        " ████████ ",
+        "███       ",
+        " ███████  ",
+        "      ███ ",
+        "████████  ",
+        " ███████  ",
+    ],
+    "t": [
+        "   ███    ",
+        "   ███    ",
+        "█████████ ",
+        "   ███    ",
+        "   ███    ",
+        "   ███    ",
+        "   ██████ ",
+        "    █████ ",
+    ],
+    "i": [
+        " ███ ",
+        "     ",
+        " ███ ",
+        " ███ ",
+        " ███ ",
+        " ███ ",
+        " ███ ",
+        " ███ ",
+    ],
+}
+
+
+def hex2rgb(h):
+    h = h.strip().lstrip("#")
+    if len(h) != 6:
+        return (142, 229, 255)
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def mix(a, b, t):
+    t = max(0.0, min(1.0, t))
+    return (
+        int(a[0] + (b[0] - a[0]) * t),
+        int(a[1] + (b[1] - a[1]) * t),
+        int(a[2] + (b[2] - a[2]) * t),
+    )
+
+
+def fg(rgb, bold=False):
+    b = "1;" if bold else ""
+    return f"\x1b[{b}38;2;{rgb[0]};{rgb[1]};{rgb[2]}m"
+
+
+def load_palette():
+    pal = {
+        "bg": "#090c10",
+        "primary": "#8ee5ff",
+        "tertiary": "#cbb9f5",
+        "secondary": "#b3c8d6",
+        "fg": "#e4e9f2",
+        "muted": "#9ca7ba",
+    }
+    path = os.path.expanduser("~/.config/kitty/colors.conf")
+    try:
+        with open(path) as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 2 and parts[1].startswith("#"):
+                    k, v = parts[0], parts[1]
+                    if k == "background":
+                        pal["bg"] = v
+                    elif k == "foreground":
+                        pal["fg"] = v
+                    elif k == "color4":
+                        pal["primary"] = v
+                    elif k == "color2":
+                        pal["tertiary"] = v
+                    elif k == "color3":
+                        pal["secondary"] = v
+                    elif k == "color7":
+                        pal["muted"] = v
+    except OSError:
+        pass
+    return {k: hex2rgb(v) for k, v in pal.items()}
+
+
+def render_3d_slant_chars(pal, word="Acoustic"):
+    rows = 8
+    raw_lines = [""] * rows
+    for idx, ch in enumerate(word):
+        g = GLYPHS[ch]
+        for r in range(rows):
+            raw_lines[r] += g[r] + (" " if idx < len(word) - 1 else "")
+
+    base_w = len(raw_lines[0])
+    # Italic slant: top rows shifted further right ("nghieng nghieng")
+    max_slant = rows - 1
+    pad_l = 4
+    pad_r = 6
+    pad_t = 1
+    pad_b = 3
+    W = base_w + max_slant + pad_l + pad_r
+    H = rows + pad_t + pad_b
+
+    # Face grid: 1 if front letter face is present at (r, c)
+    face = [[0] * W for _ in range(H)]
+    for r in range(rows):
+        slant = (rows - 1 - r)  # 1 cell right per row up -> clean 45-deg italic slant!
+        line = raw_lines[r]
+        for x, ch in enumerate(line):
+            if ch != " ":
+                face[r + pad_t][pad_l + slant + x] = 1
+
+    prim = pal["primary"]
+    tert = pal["tertiary"]
+    sec = pal["secondary"]
+    bg = pal["bg"]
+    white = (255, 255, 255)
+
+    out_lines = []
+    for y in range(H):
+        line_buf = ["  "]
+        for x in range(W):
+            u = max(0.0, min(1.0, (x - pad_l) / max(1, base_w + max_slant)))
+            grad = mix(prim, tert, u)
+
+            if face[y][x]:
+                # Front 3D Chrome Letter Face
+                is_top_edge = (y == 0) or (not face[y - 1][x])
+                is_left_edge = (x == 0) or (not face[y][x - 1])
+                if is_top_edge or is_left_edge:
+                    # Specular highlight rim on top/left bevel of the 3D letter
+                    c = mix(grad, white, 0.48)
+                else:
+                    v = (y - pad_t) / max(1, rows - 1)
+                    c = mix(grad, white, 0.20 * (1.0 - v))
+                line_buf.append(f"{fg(c, True)}█")
+            elif y >= 1 and x >= 1 and face[y - 1][x - 1]:
+                # 3D Extrusion Layer 1 (closest 3D side block)
+                c = mix(mix(grad, sec, 0.25), bg, 0.42)
+                line_buf.append(f"{fg(c)}▓")
+            elif y >= 2 and x >= 2 and face[y - 2][x - 2]:
+                # 3D Extrusion Layer 2 (deeper 3D shadow block)
+                c = mix(mix(grad, sec, 0.35), bg, 0.62)
+                line_buf.append(f"{fg(c)}▒")
+            else:
+                # Soft Character-Art Blur Halo ("lam kieu blur" around the 3D letters!)
+                near = 0
+                for dy in (-2, -1, 0, 1, 2):
+                    yy = y + dy
+                    if 0 <= yy < H:
+                        for dx in (-3, -2, -1, 0, 1, 2, 3):
+                            xx = x + dx
+                            if 0 <= xx < W and face[yy][xx]:
+                                d = abs(dx) + abs(dy)
+                                if d <= 2:
+                                    near = max(near, 2)
+                                elif d <= 3:
+                                    near = max(near, 1)
+                if near == 2:
+                    c = mix(grad, bg, 0.74)
+                    line_buf.append(f"{fg(c)}░")
+                elif near == 1:
+                    c = mix(grad, bg, 0.85)
+                    line_buf.append(f"{fg(c)}·")
+                else:
+                    line_buf.append(" ")
+        out_lines.append("".join(line_buf).rstrip() + "\x1b[0m")
+
+    return "\n".join(out_lines)
+
+
+def render_status_bar(pal):
+    p_rgb = pal["primary"]
+    t_rgb = pal["tertiary"]
+    m_rgb = pal["muted"]
+
+    user = os.environ.get("USER", "cuongacoustic")
+    host = os.uname().nodename
+    kern = os.uname().release.split("-")[0]
+    try:
+        up = int(float(open("/proc/uptime").read().split()[0]))
+        upt = f"{up // 3600}h {(up % 3600) // 60}m"
+    except OSError:
+        upt = "now"
+
+    gpu_drv = "RTX 4050"
+    try:
+        drv_link = os.path.realpath("/sys/bus/pci/devices/0000:01:00.0/driver")
+        if drv_link.endswith("nouveau"):
+            gpu_drv = "RTX 4050 (nouveau)"
+        elif drv_link.endswith("nvidia"):
+            gpu_drv = "RTX 4050 (nvidia-open)"
+    except OSError:
+        pass
+
+    items = [
+        f"◆ {user}@{host}",
+        "󰖲 Hyprland 0.57",
+        f"󰒋 {kern}",
+        "󰻠 Ryzen 7 7445HS",
+        f"󰢮 {gpu_drv}",
+        f"󰅐 {upt}",
+    ]
+    line = "  ·  ".join(items)
+    out = ["   "]
+    n = max(1, len(line) - 1)
+    for i, ch in enumerate(line):
+        c = mix(p_rgb, t_rgb, i / n)
+        if ch in ("◆", "·"):
+            out.append(f"{fg(c, True)}{ch}\x1b[22m")
+        else:
+            cm = mix(m_rgb, c, 0.65)
+            out.append(f"{fg(cm)}{ch}")
+    out.append("\x1b[0m")
+    return "".join(out)
+
+
+def main():
+    if "--prewarm" in sys.argv:
+        return
+    pal = load_palette()
+    sys.stdout.write("\n")
+    sys.stdout.write(render_3d_slant_chars(pal, "Acoustic") + "\n")
+    sys.stdout.write(render_status_bar(pal) + "\n\n")
+    sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()

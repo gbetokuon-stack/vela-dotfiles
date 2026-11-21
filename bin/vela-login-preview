@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =============================================================================
+#  vela-login-preview — Live 144Hz Preview of Vela SDDM Login Screen
+# =============================================================================
+THEME_DIR="$HOME/.local/share/sddm/themes/vela-nocturne"
+WALL_CACHE="$HOME/.cache/vela/current_wallpaper.img"
+DEFAULT_WALL="$HOME/Pictures/Wallpapers/01-nocturne-prism.jpg"
+
+if [[ -f "$WALL_CACHE" ]]; then
+    cp -fL "$WALL_CACHE" "$THEME_DIR/background.jpg"
+elif [[ ! -f "$THEME_DIR/background.jpg" && -f "$DEFAULT_WALL" ]]; then
+    cp -f "$DEFAULT_WALL" "$THEME_DIR/background.jpg"
+fi
+
+exec sddm-greeter-qt6 --test-mode --theme "$THEME_DIR" "$@"

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export PATH="$HOME/.local/bin:$PATH"
+if pgrep -f "quickshell -c vela" >/dev/null 2>&1; then
+    qs -c vela ipc call clipboard toggle
+else
+    cliphist list | rofi -dmenu -p "Clipboard" -theme ~/.config/rofi/vela.rasi | cliphist decode | wl-copy
+fi
