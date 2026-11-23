@@ -7,6 +7,7 @@ __pycache__/
 Thumbs.db
 
 # Private / machine-local state
+config/quickshell/vela/.qmlls.ini
 config/fish/fish_variables
 config/hypr/dri/
 config/hypr/hyprland.lua.orig

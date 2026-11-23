@@ -199,6 +199,7 @@ Scope {
                                 source: (!fileImg.visible && toast.themeIconUrl.length > 0) ? toast.themeIconUrl : ""
                                 visible: !fileImg.visible && toast.themeIconUrl.length > 0
                                 asynchronous: true
+                                mipmap: true
                             }
 
                             Text {

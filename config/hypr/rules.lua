@@ -185,3 +185,30 @@ hl.window_rule({
     match   = { class = "^(firefox|chromium|brave-browser|mpv|vlc|steam_app_.*)$" },
     opacity = "1.0 1.0",
 })
+
+-- 0.57: no wobble for games / fullscreen media so input stays pixel-exact
+hl.window_rule({
+    name       = "no-wobble-games",
+    match      = { class = "^(mpv|vlc|steam_app_.*)$" },
+    no_wobble  = true,
+})
+
+hl.window_rule({
+    name      = "no-wobble-fullscreen",
+    match     = { fullscreen = true },
+    no_wobble = true,
+})
+
+-- 0.57: stop terminals triggering AutoHDR (e.g. foot) in fullscreen
+hl.window_rule({
+    name        = "no-auto-hdr-terminals",
+    match       = { class = "^(kitty|foot|alacritty)$" },
+    no_auto_hdr = true,
+})
+
+-- 0.57: keep private overlays out of portal screen shares (grim screenshots still see them)
+hl.layer_rule({
+    name  = "vela-private-overlays-no-share",
+    match = { namespace = "^vela-(notifs|osd|power|clipboard|cheatsheet)$" },
+    no_screen_share = true,
+})

@@ -1,4 +1,5 @@
 //@ pragma UseQApplication
+//@ pragma DropExpensiveFonts
 import QtQml
 import Quickshell
 import Quickshell.Io

@@ -40,6 +40,10 @@
 
 **Vela 2.0** is a cohesive, pure-Wayland desktop shell written from scratch in **Qt6 QML (Quickshell)** paired with **Hyprland's modern Lua configuration API** — zero Waybar, zero Dunst, zero Eww, zero shell-script polling lag.
 
+- **✨ 0.57 Eye-Candy Layer** — Matugen-tinted inner **glow**, springy window **wobble**, optional **motion blur**, blur behind **Fcitx5** popups and a subtle vignette shader. All toggleable live from `Super + I` (or `vela-ctl set …`). Games/fullscreen windows opt out of wobble.
+- **🛡️ Share-Safe Overlays** — notification, OSD, power, clipboard and cheatsheet layers are excluded from portal screen sharing, while `grim` screenshots still capture them.
+- **🧰 Rebuild Recipe** — `packages/arch.txt`, `update.sh` and [TROUBLESHOOTING.md](TROUBLESHOOTING.md) keep the rice reproducible and repairable.
+
 - **🏝️ Three-Island Floating TopBar** — Morphing workspace pills, active window title, clock + live **8-bar Cava audio visualizer** & MPRIS media controls, native **System Tray**, clickable **Fcitx5 (`VN`/`EN`)** indicator, hybrid GPU status pill, and unread notification badge.
 - **🎛️ Vela Command Deck** — 144Hz tactile sliders (zero-lag drag + fractional touchpad scroll), **native PipeWire Dual-Speaker Switcher & Per-App Audio Mixer**, real-time Ryzen/RTX/RAM telemetry, **12-bar Cava spectrum + MPRIS seek timeline**, and **Notification History Center** with interactive toast actions.
 - **🔍 Spotlight 2.0 Launcher** — Real **Papirus-Dark** system icons, frecency ordering, instant **inline calculator** (`= (1920/16)*9` → Enter to copy), **quick shell runner** (`> cmd`), full 3-column arrow-key navigation, and a 1-click **Launch with RTX 4050 (`prime-run`)** toggle.
@@ -206,7 +210,7 @@ vela-dotfiles/
 ├── bin/                    # Vela CLI & backend helpers (vela-theme, vela-ctl, vela-apps,
 │                           #   vela-telemetry, vela-cava, vela-clipboard, vela-keybinds, ...)
 ├── config/
-│   ├── hypr/               # Modular Hyprland 0.57.2 Lua config + hyprlock + hypridle
+│   ├── hypr/               # Modular Hyprland 0.57.2 Lua config + shaders/vela-vignette.frag + hyprlock + hypridle
 │   ├── quickshell/vela/    # Complete Vela 2.0 Quickshell desktop shell (12 QML modules)
 │   ├── matugen/            # Matugen v4 config + 13 Material You templates
 │   ├── kitty/              # Frosted blur terminal config
@@ -221,7 +225,10 @@ vela-dotfiles/
 │   └── starship.toml       # Dynamic Starship prompt
 ├── sddm/vela-nocturne/     # Matching Cyber-Glass SDDM login theme
 ├── scripts/                # Full AMD + NVIDIA Open driver & rice provisioner
+├── packages/arch.txt       # Reproducible Arch package list
+├── TROUBLESHOOTING.md      # Common fixes (shader, shell, RTD3, sync)
 ├── install.sh              # Automated backup + installer
+├── update.sh               # Fetch -> install -> hyprctl reload
 └── sync.sh                 # Live-to-repo sync utility
 ```
 

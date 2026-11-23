@@ -98,6 +98,9 @@ Singleton {
     property bool animEnabled: true
     property string animPreset: "spring"
     property bool vrrEnabled: true
+    property bool glowEnabled: true
+    property bool wobbleEnabled: true
+    property bool motionBlurEnabled: false
     property int slideshowMins: 0
 
     // Dock Suite Configuration (6 Presets + Live Tuning, persisted via vela-ctl)
@@ -902,6 +905,9 @@ Singleton {
         else if (key === "anim_enabled") animEnabled = Boolean(val)
         else if (key === "anim_preset") animPreset = String(val)
         else if (key === "vrr_enabled") vrrEnabled = Boolean(val)
+        else if (key === "glow_enabled") glowEnabled = Boolean(val)
+        else if (key === "wobble_enabled") wobbleEnabled = Boolean(val)
+        else if (key === "motion_blur_enabled") motionBlurEnabled = Boolean(val)
         else if (key === "slideshow_mins") slideshowMins = Number(val)
         else if (key === "dock_enabled") dockEnabled = Boolean(val)
         else if (key === "dock_style") dockStyle = String(val)
@@ -1114,6 +1120,9 @@ Singleton {
                     root.animEnabled = c.anim_enabled ?? true
                     root.animPreset = c.anim_preset ?? "spring"
                     root.vrrEnabled = c.vrr_enabled ?? true
+                    root.glowEnabled = c.glow_enabled ?? true
+                    root.wobbleEnabled = c.wobble_enabled ?? true
+                    root.motionBlurEnabled = c.motion_blur_enabled ?? false
                     root.slideshowMins = c.slideshow_mins ?? 0
                     if (c.layout_mode) root.layoutMode = c.layout_mode
                     if (c.dock_enabled !== undefined) root.dockEnabled = Boolean(c.dock_enabled)

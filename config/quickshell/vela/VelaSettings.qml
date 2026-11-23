@@ -934,6 +934,57 @@ PanelWindow {
                         }
                     }
 
+                    // Hyprland 0.57 effects — glow / wobble / motion blur
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Rectangle {
+                            height: 26; width: glowTxt.implicitWidth + 18; radius: 13
+                            color: Store.glowEnabled ? Colors.primary : Colors.glassHighlight
+                            Text {
+                                id: glowTxt; anchors.centerIn: parent
+                                text: Store.glowEnabled ? "Glow: BẬT" : "Glow: TẮT"
+                                font.family: "Inter"; font.pixelSize: 10; font.bold: true
+                                color: Store.glowEnabled ? Colors.m3onPrimary : Colors.m3onSurfaceVariant
+                            }
+                            MouseArea {
+                                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                onClicked: Store.setTuning("glow_enabled", !Store.glowEnabled)
+                            }
+                        }
+
+                        Rectangle {
+                            height: 26; width: wobbleTxt.implicitWidth + 18; radius: 13
+                            color: Store.wobbleEnabled ? Colors.primary : Colors.glassHighlight
+                            Text {
+                                id: wobbleTxt; anchors.centerIn: parent
+                                text: Store.wobbleEnabled ? "Wobble: BẬT" : "Wobble: TẮT"
+                                font.family: "Inter"; font.pixelSize: 10; font.bold: true
+                                color: Store.wobbleEnabled ? Colors.m3onPrimary : Colors.m3onSurfaceVariant
+                            }
+                            MouseArea {
+                                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                onClicked: Store.setTuning("wobble_enabled", !Store.wobbleEnabled)
+                            }
+                        }
+
+                        Rectangle {
+                            height: 26; width: mbTxt.implicitWidth + 18; radius: 13
+                            color: Store.motionBlurEnabled ? Colors.primary : Colors.glassHighlight
+                            Text {
+                                id: mbTxt; anchors.centerIn: parent
+                                text: Store.motionBlurEnabled ? "Motion Blur: BẬT" : "Motion Blur: TẮT"
+                                font.family: "Inter"; font.pixelSize: 10; font.bold: true
+                                color: Store.motionBlurEnabled ? Colors.m3onPrimary : Colors.m3onSurfaceVariant
+                            }
+                            MouseArea {
+                                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                onClicked: Store.setTuning("motion_blur_enabled", !Store.motionBlurEnabled)
+                            }
+                        }
+                    }
+
                     SettingSlider {
                         label: "Độ mờ kính (Blur Size)"
                         value: Store.blurSize

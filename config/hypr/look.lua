@@ -23,6 +23,37 @@ hl.config({
         active_opacity   = 1.0,
         inactive_opacity = 0.96,
         dim_inactive     = false,
+        dim_modal        = true,
+        dim_special      = 0.25,
+        dim_strength     = 0.55,
+
+        -- Full-screen finishing shader: soft vignette + micro-grain (Matugen palette untouched)
+        screen_shader    = os.getenv("HOME") .. "/.config/hypr/shaders/vela-vignette.frag",
+
+        -- Inner glow tinted by Matugen (new in 0.57). Disabled for games via window rules.
+        glow = {
+            enabled        = true,
+            color          = c.primary,
+            color_inactive = c.outline_variant,
+            range          = 14,
+            render_power   = 3,
+        },
+
+        -- Compiz-style springy window deformation (new in 0.57)
+        wobble = {
+            enabled   = true,
+            mesh      = 12,
+            stiffness = 200,
+            damping   = 14,
+            mass      = 1,
+            intensity = 0.12,
+        },
+
+        -- Ready to toggle from Studio; off by default to protect NVIDIA RTD3 battery life.
+        motion_blur = {
+            enabled = false,
+            samples = 5,
+        },
 
         shadow = {
             enabled      = true,
@@ -47,11 +78,14 @@ hl.config({
             vibrancy_darkness  = 0.08,
             popups             = true,
             popups_ignorealpha = 0.15,
+            input_methods      = true,          -- blur Fcitx5 candidate boxes (VN/EN indicator)
+            input_methods_ignorealpha = 0.2,
         },
     },
 
     animations = {
-        enabled = true,
+        enabled              = true,
+        workspace_wraparound = true,   -- workspace 1 <-> 10 wraps smoothly
     },
 
     dwindle = {
@@ -97,7 +131,8 @@ hl.config({
         -- Force hardware DRM cursor plane on AMD Radeon 740M iGPU (eDP-1).
         -- Default (2 = auto) disables hardware cursors globally when NVIDIA dGPU is present,
         -- adding 15-25ms compositor frame latency to all mice (USB 8K receiver & Bluetooth).
-        no_hardware_cursors = 0,
+        no_hardware_cursors    = 0,
+        warp_on_monitor_change = 1,   -- follow focus to last window when swapping displays
     },
 
     layers = {
@@ -144,6 +179,7 @@ hl.curve("velaMoveSpring", { type = "spring", mass = 1.0, stiffness = 200, dampi
 
 hl.animation({ leaf = "global",           enabled = true, speed = 6.0, bezier = "velaFluid" })
 hl.animation({ leaf = "border",           enabled = true, speed = 5.0, bezier = "velaSilk" })
+hl.animation({ leaf = "glowangle",        enabled = true, speed = 8.0, bezier = "velaFluid", style = "once" })
 hl.animation({ leaf = "windows",          enabled = true, speed = 4.4, spring = "velaSpring" })
 hl.animation({ leaf = "windowsIn",        enabled = true, speed = 4.2, spring = "velaSpring",     style = "popin 88%" })
 hl.animation({ leaf = "windowsOut",       enabled = true, speed = 3.0, bezier = "velaFluid",      style = "popin 90%" })
