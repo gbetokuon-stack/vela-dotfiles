@@ -15,17 +15,44 @@ ShellRoot {
 
     TopBar {}
     Dock {}
-    DockStudio {}
-    CommandDeck {}
     OsdOverlay {}
-    WallpaperPicker {}
-    AppLauncher {}
-    VelaSettings {}
-    ClipboardOverlay {}
-    KeybindCheatsheet {}
-    LayoutOverlay {}
-    PowerMenu {}
     NotifPopups {}
+
+    // Quickshell 0.3: prepare heavy overlays in spare frame time so the shell
+    // appears instantly. Windows are reused synchronously on config reload.
+    LazyLoader { loading: true; DockStudio {} }
+    LazyLoader { loading: true; CommandDeck {} }
+    LazyLoader { loading: true; WallpaperPicker {} }
+    LazyLoader { loading: true; AppLauncher {} }
+    LazyLoader { loading: true; VelaSettings {} }
+    LazyLoader { loading: true; ClipboardOverlay {} }
+    LazyLoader { loading: true; KeybindCheatsheet {} }
+    LazyLoader { loading: true; LayoutOverlay {} }
+    LazyLoader { loading: true; PowerMenu {} }
+
+    // Quickshell 0.3: keep overlays open across a QML config reload (handy while tuning)
+    PersistentProperties {
+        id: velaOverlayPersist
+        reloadableId: "vela-overlays"
+        property bool deckOpen: false
+        property bool settingsOpen: false
+        property bool launcherOpen: false
+        property bool clipboardOpen: false
+        onLoaded: {
+            Store.deckOpen = deckOpen
+            Store.settingsOpen = settingsOpen
+            Store.launcherOpen = launcherOpen
+            Store.clipboardOpen = clipboardOpen
+        }
+    }
+
+    Connections {
+        target: Store
+        function onDeckOpenChanged() { velaOverlayPersist.deckOpen = Store.deckOpen }
+        function onSettingsOpenChanged() { velaOverlayPersist.settingsOpen = Store.settingsOpen }
+        function onLauncherOpenChanged() { velaOverlayPersist.launcherOpen = Store.launcherOpen }
+        function onClipboardOpenChanged() { velaOverlayPersist.clipboardOpen = Store.clipboardOpen }
+    }
 
     IpcHandler {
         target: "deck"

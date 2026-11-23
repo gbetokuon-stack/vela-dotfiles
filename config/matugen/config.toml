@@ -53,3 +53,7 @@ output_path = "~/.config/qt6ct/colors/vela.conf"
 [templates.yazi]
 input_path = "~/.config/matugen/templates/yazi-theme.toml"
 output_path = "~/.config/yazi/theme.toml"
+
+[templates.firefox]
+input_path = "~/.config/matugen/templates/firefox-userChrome.css"
+output_path = "~/.config/vela/firefox-userChrome.css"

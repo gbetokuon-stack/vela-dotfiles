@@ -146,8 +146,20 @@ fi
 
 # 2. Generate Material You palette with Matugen v4
 if command -v matugen >/dev/null 2>&1; then
+    mkdir -p "$HOME/.config/vela" 2>/dev/null || true
     matugen image "$WALL" -t "$SCHEME" -m "$MODE" --source-color-index 0 >/dev/null 2>&1 || \
     matugen image "$WALL" -m "$MODE" --source-color-index 0 >/dev/null 2>&1 || true
+fi
+
+# 2b. Push the generated chrome CSS into any Firefox / Zen profile that exists.
+#     Firefox needs toolkit.legacyUserProfileCustomizations.stylesheets = true.
+VELA_FF_CSS="$HOME/.config/vela/firefox-userChrome.css"
+if [[ -f "$VELA_FF_CSS" ]]; then
+    for prof in "$HOME"/.mozilla/firefox/*.default* "$HOME"/.var/app/io.github.zen_browser.zen/.zen/*.default*; do
+        [[ -d "$prof" ]] || continue
+        mkdir -p "$prof/chrome" 2>/dev/null || true
+        cp -f "$VELA_FF_CSS" "$prof/chrome/userChrome.css" 2>/dev/null || true
+    done
 fi
 
 # 3. Sync GTK dark/light mode preference

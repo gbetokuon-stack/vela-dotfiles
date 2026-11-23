@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
@@ -6,6 +7,14 @@ import Quickshell.Wayland
 PanelWindow {
     id: wallOverlay
     property real openAnim: Store.wallpaperOpen ? 1.0 : 0.0
+
+    // Quickshell 0.3 native color quantization: 8 colors from the live wallpaper.
+    ColorQuantizer {
+        id: wallPalette
+        source: Store.currentWallpaper ? Qt.resolvedUrl("file://" + Store.currentWallpaper) : ""
+        depth: 3
+        rescaleSize: 64
+    }
     Behavior on openAnim {
         NumberAnimation {
             duration: Store.wallpaperOpen ? 260 : 160
@@ -132,6 +141,30 @@ PanelWindow {
                     }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Store.toggleDarkLight() }
                 }
+            }
+
+            // Native QML quantized palette from the current wallpaper (QS 0.3)
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+                Text {
+                    text: "Ảnh gốc:"
+                    font.family: "Inter"
+                    font.pixelSize: 11
+                    color: Colors.m3onSurfaceVariant
+                }
+                Repeater {
+                    model: wallPalette.colors
+                    delegate: Rectangle {
+                        width: 18; height: 18; radius: 9
+                        color: modelData
+                        border.width: 1; border.color: Colors.glassBorder
+                        ToolTip.visible: ma.containsMouse
+                        ToolTip.text: String(modelData)
+                        MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true }
+                    }
+                }
+                Item { Layout.fillWidth: true }
             }
 
             // Second Row: 7 Matugen Color Scheme Chips

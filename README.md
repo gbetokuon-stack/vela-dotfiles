@@ -21,7 +21,7 @@
 
 [✨ Features](#-highlights) •
 [📸 Showcase](#-showcase) •
-[🎨 Dynamic Theming](#-matugen-v4-ecosystem-13-targets) •
+[🎨 Dynamic Theming](#-matugen-v4-ecosystem-14-targets) •
 [⌨️ Keybindings](#️-keybindings) •
 [🚀 Installation](#-installation) •
 [⚡ Hybrid GPU](#-hybrid-gpu-optimization)
@@ -96,7 +96,7 @@
 | :--- | :--- | :--- |
 | **OS** | Arch Linux | Rolling release, Wayland-native (`uwsm`) |
 | **Compositor** | [Hyprland 0.57.2](https://hyprland.org/) | Full **Lua API** (`hyprland.lua` + modular configs) |
-| **Desktop Shell** | [Quickshell](https://quickshell.outfoxxed.me/) | 12 custom QML components (Bar, Deck, Launcher, Studio, Clipboard, Cheatsheet, OSD, Toasts, Power) |
+| **Desktop Shell** | [Quickshell 0.3](https://quickshell.outfoxxed.me/) | 12 custom QML components (Bar, Deck, Launcher, Studio, Clipboard, Cheatsheet, OSD, Toasts, Power), async `LazyLoader` overlays, `PersistentProperties` overlay state, native `ColorQuantizer` palette |
 | **Dynamic Theming** | [Matugen v4](https://github.com/InioX/matugen) | 13 synchronized templates + Dark/Light + 7 schemes |
 | **Wallpaper Engine** | `awww` | 144fps radial grow transitions with custom Bézier |
 | **Terminal & Shell** | Kitty + Fish + Starship | Frosted blur, dynamic palette, 3D `Acoustic` banner |
@@ -107,7 +107,7 @@
 
 ---
 
-## 🎨 Matugen v4 Ecosystem (13 Targets)
+## 🎨 Matugen v4 Ecosystem (14 Targets)
 
 Changing your wallpaper (`Super + W`), hitting random (`Super + Shift + W`), or toggling Dark/Light mode (`Super + Shift + D`) regenerates and hot-reloads the entire desktop in under a second:
 
@@ -116,6 +116,7 @@ Changing your wallpaper (`Super + W`), hitting random (`Super + Shift + W`), or 
 | **Desktop & Shell** | Quickshell (`Colors.qml`), Hyprland (`colors.lua`), Hyprlock (`hyprlock-colors.conf`), Rofi (`colors.rasi`) |
 | **Toolkits** | GTK 3 (`gtk-3.0/colors.css`), GTK 4 / libadwaita (`gtk-4.0/colors.css`), Qt6ct (`qt6ct/colors/vela.conf`) |
 | **Terminal & CLI** | Kitty (`colors.conf`), Fish + FZF (`conf.d/vela-colors.fish`), Starship (`starship.toml`), Yazi (`theme.toml`), btop (`vela.theme`), Cava (`config`) |
+| **Browser** | Firefox / Zen `userChrome.css` — copied into detected profiles on every theme change (requires `toolkit.legacyUserProfileCustomizations.stylesheets = true`) |
 
 ---
 

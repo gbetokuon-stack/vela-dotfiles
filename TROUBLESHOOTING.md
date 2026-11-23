@@ -68,6 +68,22 @@ after a kernel update to rebuild initramfs with early KMS.
 always show a one-line diff against the live files. Private files
 (`fish_variables`, `hypr/dri/`, `*.orig`) are intentionally skipped.
 
+## Firefox / Zen chrome not following the wallpaper
+
+`vela-theme` writes `~/.config/vela/firefox-userChrome.css` from Matugen and
+copies it into every detected Firefox/Zen profile's `chrome/userChrome.css`.
+Firefox only honours it when
+`about:config → toolkit.legacyUserProfileCustomizations.stylesheets = true`.
+Restart Firefox after the first install.
+
+## Native Wi-Fi status in the bar
+
+Quickshell's 0.3 networking module requires NetworkManager (`NetworkManager.service`
++ its D-Bus interface). This machine currently uses `iwd`/another backend and
+NetworkManager is inactive, so network status still comes from `vela-telemetry`.
+The native module was therefore intentionally left off rather than showing a
+fake "offline" state.
+
 ## Sync / update
 
 ```sh
